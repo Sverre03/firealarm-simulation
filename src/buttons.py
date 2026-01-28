@@ -1,6 +1,6 @@
 
 import pygame
-
+from config import *
 
 class Switch:
     def __init__(self, x, y, width, height, color, text=''):
@@ -15,7 +15,7 @@ class Switch:
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
         if self.text:
-            text_surf = self.font.render(self.text, True, (0, 0, 0))
+            text_surf = self.font.render(self.text, True, BLACK)
             text_rect = text_surf.get_rect(center=self.rect.center)
             screen.blit(text_surf, text_rect)
 
@@ -25,6 +25,6 @@ class Switch:
             if self.rect.collidepoint(pygame.mouse.get_pos()):
                 print(f'Switch "{self.text}" clicked!')
                 self.state = not self.state
-                self.color = (0, 255, 0) if self.state else (255, 0, 0)
+                self.color = GREEN if self.state else RED
                 self.text = 'Active' if self.state else 'Inactive'
         self.last_switch_time += dt
