@@ -3,12 +3,14 @@ import pygame
 from config import *
 
 class Switch:
-    def __init__(self, x, y, width, height, color, text=''):
+    def __init__(self, x, y, width, height, text_active='Active', text_inactive='Inactive', initial_state=True):
         self.rect = pygame.Rect(x, y, width, height)
-        self.color = color
-        self.text = text
+        self.color = GREEN if initial_state else RED
+        self.text_active = text_active
+        self.text_inactive = text_inactive
+        self.text = text_active if initial_state else text_inactive
         self.font = pygame.font.SysFont(None, 24)
-        self.state = True  # True for 'Active', False for 'Inactive'
+        self.state = initial_state  # True for 'Active', False for 'Inactive'
         self.switch_delay = 0.5 # seconds
         self.last_switch_time = 0
 
@@ -26,5 +28,5 @@ class Switch:
                 print(f'Switch "{self.text}" clicked!')
                 self.state = not self.state
                 self.color = GREEN if self.state else RED
-                self.text = 'Active' if self.state else 'Inactive'
+                self.text = self.text_active if self.state else self.text_inactive
         self.last_switch_time += dt

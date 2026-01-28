@@ -11,8 +11,8 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Fire Alarm Simulation")
 
-    switch = Switch(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT - 100, 100, 50, GREEN, 'Active')
-    quit_button = Switch(SCREEN_WIDTH - 110, 10, 100, 50, RED, 'Quit')
+    switch = Switch(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT - 100, 100, 50, 'Active', 'Inactive', True)
+    quit_button = Switch(SCREEN_WIDTH - 110, 10, 100, 50, 'Quit', 'Quit', False)
 
     # Main loop
     running = True
@@ -27,7 +27,7 @@ def main():
         # Update
         switch.update(dt)
         quit_button.update(dt)
-        if not quit_button.state:
+        if quit_button.state:
             running = False
 
         # Draw
@@ -35,7 +35,7 @@ def main():
 
         switch.draw(screen)
         quit_button.draw(screen)
-        
+
         # Update the display
         pygame.display.flip()
 
