@@ -1,8 +1,8 @@
 import pygame
-from buttons import Button
+from buttons import Switch
 
 WHITE = (255, 255, 255)
-FPS = 1000
+FPS = 60
 
 def main():
     # Initialize Pygame
@@ -12,21 +12,23 @@ def main():
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Fire Alarm Simulation")
 
-    button = Button(350, 500, 100, 50, (0, 255, 0), 'Activate')
+    switch = Switch(350, 500, 100, 50, (0, 255, 0), 'Active')
 
     # Main loop
     running = True
     clock = pygame.time.Clock()
     while running:
+        dt = clock.tick(FPS) / 1000
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        clock.tick(FPS)
+        
         # Update
+        switch.update(dt)
 
         # Draw
         screen.fill(WHITE)
-        button.draw(screen)
+        switch.draw(screen)
         # Update the display
         pygame.display.flip()
 
