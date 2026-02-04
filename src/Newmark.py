@@ -128,6 +128,7 @@ def linear_newmark_krenk(M,C,K,f,u0,udot0,h,gamma=0.5,beta=0.25):
         u[:,n+1] = ustar_np1 + beta*h**2*u2dot[:,n+1];
     
     return u, udot, u2dot
+
 @njit
 def linear_newmark_chopra(M,C,K,f,u0,udot0,h,gamma,beta):
     """

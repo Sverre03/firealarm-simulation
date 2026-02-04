@@ -7,7 +7,7 @@ import Newmark
 def FEM_setup(WIDTH, HEIGHT):
     gamma = np.linspace(-1,1,100000)
     dgamma = gamma[1]-gamma[0]
-    number_of_elements=80
+    number_of_elements = 80
     number_of_nodes = number_of_elements*3-(number_of_elements-1)
     epsilon = 1
     mu = 1
@@ -57,12 +57,6 @@ def FEM_setup(WIDTH, HEIGHT):
     u,v,a = Newmark.linear_newmark_krenk(M_global_cal,C_global_cal,K_global_cal,f_cal,u0_cal,v0_cal,dt)
 
     return u, number_of_nodes
-
-
-
-# -------------------------
-# Animation loop
-# -------------------------
 
 def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt):
     # undeformed axis
