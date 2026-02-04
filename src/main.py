@@ -1,7 +1,8 @@
 import pygame
 import numpy as np
-from buttons import Switch
+from buttons import *
 from config import *
+from ui import *
 from FEM import FEM_draw, FEM_setup
 
 def main():
@@ -13,8 +14,7 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Fire Alarm Simulation")
 
-    switch = Switch(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT - 100, 100, 50, 'Active', 'Inactive', True)
-    quit_button = Switch(SCREEN_WIDTH - 110, 10, 100, 50, 'Quit', 'Quit', False)
+    ui = Menu(0, SCREEN_HEIGHT - 50, SCREEN_WIDTH, SCREEN_HEIGHT, DARK_GREY, '')
 
     # Main loop
     running = True
@@ -44,16 +44,15 @@ def main():
                 running = False
         
         # Update
-        switch.update(dt)
-        quit_button.update(dt)
-        if quit_button.state:
+        ui.update(dt)
+        if ui.quit_button.state:
             running = False
-
+        
         # Draw
-        screen.fill(WHITE)
+        screen.fill(GREY)
 
-        switch.draw(screen)
-        quit_button.draw(screen)
+        ui.draw(screen)
+        
 
         FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt)
         frame = (frame + 1) % nt
