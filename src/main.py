@@ -53,8 +53,8 @@ def main():
 
         ui.draw(screen)
         
-
-        FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt)
+        if ui.wave_sim.state and ui.wave_sim.value ==0:
+            FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt)
         frame = (frame + 1) % nt
 
         # Update the display
