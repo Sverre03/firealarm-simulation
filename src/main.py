@@ -15,7 +15,7 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Fire Alarm Simulation")
 
-    ui = Menu(0, SCREEN_HEIGHT - SCREEN_HEIGHT*MENU_HIGHT_MULTI, SCREEN_WIDTH, SCREEN_HEIGHT, DARK_GREY, '')
+    ui = Menu(0, SCREEN_HEIGHT - SCREEN_HEIGHT*MENU_HEIGHT_MULTI, SCREEN_WIDTH, SCREEN_HEIGHT, DARK_GREY, '')
 
     # Main loop
     running = True
@@ -33,7 +33,7 @@ def main():
 
     # auto-scale displacement
     u_max = np.max(np.abs(u))
-    y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HIGHT_MULTI*SCREEN_HEIGHT) / u_max
+    y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) / u_max
     # Det som kommer under er laget på egenhånd
 
     clock = pygame.time.Clock()
@@ -58,7 +58,7 @@ def main():
             FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
             room_frame = room_frame + (dt * FPS) % number_of_frames
-            draw_frame(screen, u_laplace, walls, int(room_frame))
+            draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT)
 
         frame = (frame + 1) % nt
 

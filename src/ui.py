@@ -5,7 +5,7 @@ from buttons import *
 
 class Menu:
     def __init__(self, x, y, SCREEN_WIDTH, SCREEN_HEIGHT, color, text = 'Menu'):
-        self.menu_height = MENU_HIGHT_MULTI * SCREEN_HEIGHT
+        self.menu_height = MENU_HEIGHT_MULTI * SCREEN_HEIGHT
         self.rect = pygame.Rect(x, y, SCREEN_WIDTH, self.menu_height)
         self.color = color
         self.text = text

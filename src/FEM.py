@@ -60,7 +60,7 @@ def FEM_setup(WIDTH, HEIGHT):
     return u, number_of_nodes
 
 def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt):
-    y_center = (SCREEN_HEIGHT - MENU_HIGHT_MULTI*SCREEN_HEIGHT) // 2
+    y_center = (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) // 2
     # undeformed axis (x-axis)
     pygame.draw.line(
         screen,
@@ -94,26 +94,26 @@ def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_H
     pygame.draw.line(
         screen,
         (80, 80, 80),
-        (x_pixels[0], 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
-        (x_pixels[0], SCREEN_HEIGHT - 1.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
+        (x_pixels[0], 0.5*MENU_HEIGHT_MULTI*SCREEN_HEIGHT),
+        (x_pixels[0], SCREEN_HEIGHT - 1.5*MENU_HEIGHT_MULTI*SCREEN_HEIGHT),
         1
     )
     pygame.draw.line(
         screen,
         (80, 80, 80),
-        (x_pixels[0], 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
-        (x_pixels[0]+10, 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT + 10),
+        (x_pixels[0], 0.5*MENU_HEIGHT_MULTI*SCREEN_HEIGHT),
+        (x_pixels[0]+10, 0.5*MENU_HEIGHT_MULTI*SCREEN_HEIGHT + 10),
         1
     )
     pygame.draw.line(
         screen,
         (80, 80, 80),
-        (x_pixels[0], 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
-        (x_pixels[0]-10, 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT + 10),
+        (x_pixels[0], 0.5*MENU_HEIGHT_MULTI*SCREEN_HEIGHT),
+        (x_pixels[0]-10, 0.5*MENU_HEIGHT_MULTI*SCREEN_HEIGHT + 10),
         1
     )
     text_surf_y = font.render('y', True, BLACK)
-    text_rect_y = text_surf_y.get_rect(center=(x_pixels[0]-20, 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT))
+    text_rect_y = text_surf_y.get_rect(center=(x_pixels[0]-20, 0.5*MENU_HEIGHT_MULTI*SCREEN_HEIGHT))
 
     screen.blit(text_surf_y, text_rect_y)
 

@@ -125,7 +125,7 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     u_animation = u_animation[:,:,:frame+1]
     return u_animation, walls, frame + 1, max_iter, max_diff
 
-def draw_frame(screen, u, walls, frame, normalisation=False):
+def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False):
     if u is None:
         return
 
@@ -141,7 +141,7 @@ def draw_frame(screen, u, walls, frame, normalisation=False):
     vmin = float(np.min(u_frame))
     vmax = float(np.max(u_frame))
 
-    u_frame = np.flipud(np.where(u_frame < 0.01, 0, u_frame).T)
+    u_frame = np.flipud(np.where(u_frame < 0.01, 0, u_frame))
     rgb = np.zeros((u_frame.shape[0], u_frame.shape[1], 3), dtype=np.uint8)
     for i in range(u_frame.shape[0]):
         for j in range(u_frame.shape[1]):
@@ -153,12 +153,33 @@ def draw_frame(screen, u, walls, frame, normalisation=False):
     surface = pygame.surfarray.make_surface(rgb)
 
     target_rect = screen.get_rect().copy()
-    target_rect.height = max(1, target_rect.height - 50)
-    surface = pygame.transform.smoothscale(surface, (target_rect.width, target_rect.height))
+    target_rect.height = max(1, target_rect.height - MENU_HEIGHT_MULTI * SCREEN_HEIGHT)
+    surface = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
     # Walls
     # for wall in walls:
         # pygame.draw.rect(surface, RED, wall.rect)
     screen.blit(surface, target_rect)
+
+    # Draw grid lines
+    n, m = u_frame.shape
+    for i in range(1, n):
+        x = i * target_rect.width // n
+        pygame.draw.line(screen, DARK_GREY, (x, target_rect.top), (x, target_rect.bottom))
+    for j in range(1, m):
+        y = j * target_rect.height // m
+        pygame.draw.line(screen, DARK_GREY, (target_rect.left, y), (target_rect.right, y))
+
+    cell_width = target_rect.width / n
+    cell_height = target_rect.height / m
+    for wall in walls:
+        wall_rect = pygame.Rect(
+            target_rect.left + wall.x_start * cell_width,
+            target_rect.top + wall.y_start * cell_height,
+            (wall.x_end - wall.x_start) * cell_width,
+            (wall.y_end - wall.y_start) * cell_height
+        )
+        pygame.draw.rect(screen, RED, wall_rect)
+
 
 # Plotting
 # x = np.linspace(0, Lx, n+1)
