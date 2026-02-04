@@ -14,7 +14,7 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Fire Alarm Simulation")
 
-    ui = Menu(0, SCREEN_HEIGHT - 50, SCREEN_WIDTH, SCREEN_HEIGHT, DARK_GREY, '')
+    ui = Menu(0, SCREEN_HEIGHT - SCREEN_HEIGHT*MENU_HIGHT_MULTI, SCREEN_WIDTH, SCREEN_HEIGHT, DARK_GREY, '')
 
     # Main loop
     running = True
@@ -28,11 +28,9 @@ def main():
     # x-coordinates in pixels
     x_pixels = np.linspace(50, SCREEN_WIDTH - 50, number_of_nodes)
 
-    y_center = SCREEN_HEIGHT // 2
-
     # auto-scale displacement
     u_max = np.max(np.abs(u))
-    y_scale = 0.45 * SCREEN_HEIGHT / u_max
+    y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HIGHT_MULTI*SCREEN_HEIGHT) / u_max
     # Det som kommer under er laget på egenhånd
 
     clock = pygame.time.Clock()
@@ -54,7 +52,7 @@ def main():
         ui.draw(screen)
         
         if ui.wave_sim.state and ui.wave_sim.value ==0:
-            FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt)
+            FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt)
         frame = (frame + 1) % nt
 
         # Update the display

@@ -1,5 +1,6 @@
 import numpy as np
 from numba import njit
+from config import *
 import matplotlib.pyplot as plt
 import pygame 
 import Newmark
@@ -58,8 +59,9 @@ def FEM_setup(WIDTH, HEIGHT):
 
     return u, number_of_nodes
 
-def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt):
-    # undeformed axis
+def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt):
+    y_center = (SCREEN_HEIGHT - MENU_HIGHT_MULTI*SCREEN_HEIGHT) // 2
+    # undeformed axis (x-axis)
     pygame.draw.line(
         screen,
         (80, 80, 80),
@@ -67,6 +69,53 @@ def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt)
         (x_pixels[-1], y_center),
         1
     )
+    pygame.draw.line(
+        screen,
+        (80, 80, 80),
+        (x_pixels[-1], y_center),
+        (x_pixels[-1]-10, y_center-10),
+        1
+    )
+    pygame.draw.line(
+        screen,
+        (80, 80, 80),
+        (x_pixels[-1], y_center),
+        (x_pixels[-1]-10, y_center+10),
+        1
+    )
+    font = pygame.font.SysFont(None, 24)
+    text_surf_x = font.render('x', True, BLACK)
+    text_rect_x = text_surf_x.get_rect(center=(x_pixels[-1]+15, y_center-15))
+
+    screen.blit(text_surf_x, text_rect_x)
+
+    
+    # undeformed axis (y-axis)
+    pygame.draw.line(
+        screen,
+        (80, 80, 80),
+        (x_pixels[0], 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
+        (x_pixels[0], SCREEN_HEIGHT - 1.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
+        1
+    )
+    pygame.draw.line(
+        screen,
+        (80, 80, 80),
+        (x_pixels[0], 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
+        (x_pixels[0]+10, 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT + 10),
+        1
+    )
+    pygame.draw.line(
+        screen,
+        (80, 80, 80),
+        (x_pixels[0], 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT),
+        (x_pixels[0]-10, 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT + 10),
+        1
+    )
+    text_surf_y = font.render('y', True, BLACK)
+    text_rect_y = text_surf_y.get_rect(center=(x_pixels[0]-20, 0.5*MENU_HIGHT_MULTI*SCREEN_HEIGHT))
+
+    screen.blit(text_surf_y, text_rect_y)
 
     # deformed shape
     y_disp = y_center - y_scale * u[:, frame]
@@ -89,6 +138,13 @@ def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt)
             (int(x_pixels[i]), int(y_disp[i])),
             3
         )
-
+    # Amplitude marker
+    pygame.draw.line(
+        screen,
+        (80, 80, 80),
+        (x_pixels[0]-10, y_disp[(number_of_nodes-2)//2]),
+        (x_pixels[0]+10, y_disp[(number_of_nodes-2)//2]),
+        1
+    )
     frame = (frame + 1) % nt
 

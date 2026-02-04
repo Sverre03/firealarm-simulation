@@ -5,14 +5,15 @@ from buttons import *
 
 class Menu:
     def __init__(self, x, y, SCREEN_WIDTH, SCREEN_HEIGHT, color, text = 'Menu'):
-        self.rect = pygame.Rect(x, y, SCREEN_WIDTH, 50)
+        self.menu_height = MENU_HIGHT_MULTI * SCREEN_HEIGHT
+        self.rect = pygame.Rect(x, y, SCREEN_WIDTH, self.menu_height)
         self.color = color
         self.text = text
         self.font = pygame.font.SysFont(None, 24)
-        self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-50, 100, 50, 'Quit', 'Quit', False)
-        self.room_toggle = Toggle(0, SCREEN_HEIGHT - 50, 150, 50, '2D room', '2D room', True, 0)
-        self.floor_toggle = Toggle(150, SCREEN_HEIGHT - 50, 150, 50, '2D floor', '2D floor', False, 1)
-        self.wave_sim = Toggle(300, SCREEN_HEIGHT - 50, 150, 50, 'Wave sim', 'Wave sim', False, 1)
+        self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-self.menu_height, 100, self.menu_height, 'Quit', 'Quit', False)
+        self.room_toggle = Toggle(0, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D room', '2D room', True, 0)
+        self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D floor', '2D floor', False, 1)
+        self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
