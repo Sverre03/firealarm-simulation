@@ -1,6 +1,8 @@
 import pygame
+import numpy as np
 from buttons import Switch
 from config import *
+from FEM import FEM_draw, FEM_setup
 
 def main():
     # Initialize Pygame
@@ -16,6 +18,23 @@ def main():
 
     # Main loop
     running = True
+    frame = 0
+
+    u, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
+    
+    # Det som er under her + FEM_draw() er laget av KI
+    nt=u.shape[1]
+
+    # x-coordinates in pixels
+    x_pixels = np.linspace(50, SCREEN_WIDTH - 50, number_of_nodes)
+
+    y_center = SCREEN_HEIGHT // 2
+
+    # auto-scale displacement
+    u_max = np.max(np.abs(u))
+    y_scale = 0.45 * SCREEN_HEIGHT / u_max
+    # Det som kommer under er laget på egenhånd
+
     clock = pygame.time.Clock()
     while running:
         dt = clock.tick(FPS) / 1000
@@ -35,6 +54,9 @@ def main():
 
         switch.draw(screen)
         quit_button.draw(screen)
+
+        FEM_draw(screen, frame, u, number_of_nodes, x_pixels, y_center, y_scale, nt)
+        frame = (frame + 1) % nt
 
         # Update the display
         pygame.display.flip()
