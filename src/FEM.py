@@ -117,8 +117,20 @@ def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_H
 
     screen.blit(text_surf_y, text_rect_y)
 
+    # displacement in physical space
+    disp = u[:, frame]
+
+    # index of largest absolute displacement
+    idx = np.argmax(np.abs(disp))
+
+    # signed amplitude
+    amp = disp[idx]
+
     # deformed shape
-    y_disp = y_center - y_scale * u[:, frame]
+    y_disp = y_center - y_scale * disp
+
+    # screen position
+    y_amp = y_center - y_scale * amp
 
     # draw elements
     for i in range(number_of_nodes - 3):
@@ -138,12 +150,13 @@ def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_H
             (int(x_pixels[i]), int(y_disp[i])),
             3
         )
-    # Amplitude marker
+
+    # amplitude line
     pygame.draw.line(
         screen,
         (80, 80, 80),
-        (x_pixels[0]-10, y_disp[(number_of_nodes-2)//2]),
-        (x_pixels[0]+10, y_disp[(number_of_nodes-2)//2]),
+        (x_pixels[0] - 15, y_amp),
+        (x_pixels[0] + 15, y_amp),
         1
     )
     frame = (frame + 1) % nt
