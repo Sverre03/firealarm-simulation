@@ -57,7 +57,7 @@ def main():
         if ui.wave_sim.state and ui.wave_sim.value == 0:
             FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
-            room_frame = room_frame + (dt * FPS) % number_of_frames
+            room_frame = (room_frame + dt * FPS) % number_of_frames
             draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT)
 
         frame = (frame + 1) % nt
