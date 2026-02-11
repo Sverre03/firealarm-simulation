@@ -19,11 +19,11 @@ def main():
 
     # Main loop
     running = True
-    frame = 0
+    wave_frame = 0.0
 
     u, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
     u_laplace, walls, number_of_frames, iterations, last_update = FDM_laplace()
-    room_frame = 0
+    room_frame = 0.0
     
     # Det som er under her + FEM_draw() er laget av KI
     nt=u.shape[1]
@@ -40,6 +40,8 @@ def main():
     while running:
         dt = clock.tick(FPS) / 1000
         SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
+        ui.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -54,17 +56,17 @@ def main():
         # Draw
         screen.fill(GREY)
 
-        ui.draw(screen)
-        
+        speed = max(0.0, float(ui.animation_speed.number_value))
         if ui.wave_sim.state and ui.wave_sim.value == 0:
-            FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt, paused=ui.pause_button.state)
+            if not ui.pause_button.state:
+                wave_frame = (wave_frame + speed) % nt
+            FEM_draw(screen, int(wave_frame), u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt, paused=ui.pause_button.state)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
             if not ui.pause_button.state:
-                room_frame = (room_frame + dt * FPS) % number_of_frames
+                room_frame = (room_frame + dt * FPS * speed) % number_of_frames
             draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=ui.pause_button.state)
 
-        if not ui.pause_button.state:
-            frame = (frame + 1) % nt
+        ui.draw(screen)
 
         # Update the display
         pygame.display.flip()
