@@ -6,4 +6,4 @@ src/__pycache__/
 .idea/
 env/
 .env   
- bo_results.pkl
+bo_results.pkl
