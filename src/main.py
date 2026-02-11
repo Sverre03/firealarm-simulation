@@ -43,6 +43,8 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                
+            ui.handle_event(event)
         
         # Update
         ui.update(dt)
