@@ -7,3 +7,4 @@ src/__pycache__/
 env/
 .env   
 bo_results.pkl
+bo_results3d.pkl
