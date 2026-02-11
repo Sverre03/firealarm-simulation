@@ -14,6 +14,7 @@ class Menu:
         self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-self.menu_height, 100, self.menu_height, 'Quit', 'Quit', False)
         self.room_toggle = Toggle(0, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D room', '2D room', True, 0)
         self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D floor', '2D floor', False, 1)
+        self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Pause', 'Pause', False)
         self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
         self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
         self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
@@ -29,7 +30,7 @@ class Menu:
         self.room_toggle.draw(screen)
         self.floor_toggle.draw(screen)
         self.wave_sim.draw(screen)
-
+        self.pause_button.draw(screen)
         # Draw input boxes if toggles are active
         if self.room_toggle.state and self.room_toggle.value == 0:
             self.alarm_amount_room.draw(screen)
@@ -38,6 +39,7 @@ class Menu:
 
     def update(self, dt):
         self.quit_button.update(dt)
+        self.pause_button.update(dt)
         self.room_toggle.update(dt)
         if self.room_toggle.state and self.room_toggle.value ==0:
             self.floor_toggle.value = 1
@@ -58,5 +60,3 @@ class Menu:
 
         if self.floor_toggle.state and self.floor_toggle.value ==0:
             self.alarm_amount_floor.handle_event(event)
-
-    

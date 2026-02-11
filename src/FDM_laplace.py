@@ -40,7 +40,7 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     m = 100
     dx = Lx / n
     dy = Ly / m
-    u_max = 200.0
+    u_max = 800.0
 
     u = np.zeros((n+1, m+1))
 
@@ -56,9 +56,9 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     # Walls
     wall_pixels = np.zeros((n+1, m+1), dtype=bool)
 
-    walls = [Wall(n//4, 3*n//4, m//3, m//3 + 2),
-             Wall(n//3, n//3 + 2, m//2, 3*m//4),
-             Wall(n//2, 3*n//4, m//4, m//4 + 2)]
+    walls = [Wall(int(0.25*n), int(0.75*n), int(0.33*m), int(0.33*m + 4)),
+             Wall(int(0.75*n), int(0.75*n + 2), int(0.5*m), int(0.75*m)),
+             Wall(int(0.5*n), int(0.75*n), int(0.25*m), int(0.25*m + 2))]
     
     for wall in walls:
         wall_pixels[wall.slice_x, wall.slice_y] = True
@@ -108,7 +108,7 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     u_animation = u_animation[:,:,:frame+1]
     return u_animation, walls, frame + 1, max_iter, max_diff
 
-def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False):
+def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=False):
     if u is None:
         return
 
@@ -144,6 +144,12 @@ def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisati
     # for wall in walls:
         # pygame.draw.rect(surface, RED, wall.rect)
     screen.blit(surface, target_rect)
+
+    if paused:
+        font = pygame.font.SysFont(None, 48)
+        text_surf = font.render("Paused", True, RED)
+        text_rect = text_surf.get_rect(center=screen.get_rect().center)
+        screen.blit(text_surf, text_rect)
 
     # # Draw grid lines
     # n, m = u_frame.shape

@@ -49,7 +49,7 @@ def main():
         # Update
         ui.update(dt)
         if ui.quit_button.state:
-            running = False
+            running = False            
         
         # Draw
         screen.fill(GREY)
@@ -57,12 +57,14 @@ def main():
         ui.draw(screen)
         
         if ui.wave_sim.state and ui.wave_sim.value == 0:
-            FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt)
+            FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt, paused=ui.pause_button.state)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
-            room_frame = (room_frame + dt * FPS) % number_of_frames
-            draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT)
+            if not ui.pause_button.state:
+                room_frame = (room_frame + dt * FPS) % number_of_frames
+            draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=ui.pause_button.state)
 
-        frame = (frame + 1) % nt
+        if not ui.pause_button.state:
+            frame = (frame + 1) % nt
 
         # Update the display
         pygame.display.flip()

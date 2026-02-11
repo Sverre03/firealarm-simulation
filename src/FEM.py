@@ -59,7 +59,7 @@ def FEM_setup(WIDTH, HEIGHT):
 
     return u, number_of_nodes
 
-def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt):
+def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt, paused=False):
     y_center = (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) // 2
     # undeformed axis (x-axis)
     pygame.draw.line(
@@ -159,5 +159,9 @@ def FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_H
         (x_pixels[0] + 15, y_amp),
         1
     )
-    frame = (frame + 1) % nt
 
+    if paused:
+        font = pygame.font.SysFont(None, 48)
+        text_surf = font.render("Paused", True, RED)
+        text_rect = text_surf.get_rect(center=screen.get_rect().center)
+        screen.blit(text_surf, text_rect)
