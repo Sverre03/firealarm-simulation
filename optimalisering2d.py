@@ -30,8 +30,8 @@ def loop(x_init, sim_func, acq_func, domain, tol=1e-3, debug=False, save_interva
         if iteration % save_interval == 0:
             history['acq_values'].append(current_acq)
 
-        idx_next = np.argmax(current_acq)
-        x_next = domain[idx_next]
+        idx_next = np.argmax(current_acq) #where acquisition function is largest
+        x_next = domain[idx_next] 
         acq_max = current_acq[idx_next]
         score_next = sim_func(x_next)
         if iteration % save_interval == 0:
@@ -61,7 +61,7 @@ def six_hump_camel(x):
 X, Y = np.meshgrid(np.arange(-3,3,1e-2),np.arange(-2,2,1e-2))
 domain2d = np.vstack([X.ravel(), Y.ravel()]).T
 
-res_x2d, res_y2d, res_history2d = loop([[0.5, 0.5]], six_hump_camel, expected_improvement, domain2d, tol=.3, debug=True)
+res_x2d, res_y2d, res_history2d = loop([[0.5, 0.5]], six_hump_camel, expected_improvement, domain2d, tol=.3, debug=True, save_interval=1)
 
 data_to_save = {
     'x': res_x2d,
