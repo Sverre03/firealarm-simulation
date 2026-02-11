@@ -10,10 +10,13 @@ class Menu:
         self.color = color
         self.text = text
         self.font = pygame.font.SysFont(None, 24)
+
         self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-self.menu_height, 100, self.menu_height, 'Quit', 'Quit', False)
         self.room_toggle = Toggle(0, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D room', '2D room', True, 0)
         self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D floor', '2D floor', False, 1)
         self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
+        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
+        self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
@@ -26,6 +29,12 @@ class Menu:
         self.room_toggle.draw(screen)
         self.floor_toggle.draw(screen)
         self.wave_sim.draw(screen)
+
+        # Draw input boxes if toggles are active
+        if self.room_toggle.state and self.room_toggle.value == 0:
+            self.alarm_amount_room.draw(screen)
+        if self.floor_toggle.state and self.floor_toggle.value == 0:
+            self.alarm_amount_floor.draw(screen)
 
     def update(self, dt):
         self.quit_button.update(dt)
@@ -41,3 +50,13 @@ class Menu:
         if self.wave_sim.state and self.wave_sim.value ==0:
             self.room_toggle.value = 1
             self.floor_toggle.value = 1
+
+    # Handle events for input boxes
+    def handle_event(self, event):
+        if self.room_toggle.state and self.room_toggle.value ==0:
+            self.alarm_amount_room.handle_event(event)
+
+        if self.floor_toggle.state and self.floor_toggle.value ==0:
+            self.alarm_amount_floor.handle_event(event)
+
+    

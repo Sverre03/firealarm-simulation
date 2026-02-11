@@ -5,4 +5,5 @@ src/__pycache__/
 .vscode/
 .idea/
 env/
-.env    
+.env   
+bo_results.pkl

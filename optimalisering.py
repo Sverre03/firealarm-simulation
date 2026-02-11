@@ -47,12 +47,9 @@ def sim_test(x):
     return (x-1)**3+1-x
 
 domain = np.arange(0,3,1e-3)
-res_x, res_y, res_history = loop(np.array([0.5]), sim_test, expected_improvement, domain, tol=1e-5)
-print(res_x)
-print(res_y)
+res_x, res_y, res_history = loop(np.array([0.5]), sim_test, expected_improvement, domain, tol=1e-3)
 print(f'Maximum at ({res_x[np.argmax(res_y)]}, {max(res_y)}')
 
 plt.scatter(res_x, res_y)
 plt.plot(domain, sim_test(domain))
 plt.show()
-
