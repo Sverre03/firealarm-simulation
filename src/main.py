@@ -1,6 +1,10 @@
 import pygame
-from buttons import Switch
+import numpy as np
+from buttons import *
 from config import *
+from ui import *
+from FEM import FEM_draw, FEM_setup
+from FDM_laplace import FDM_laplace, draw_frame
 
 def main():
     # Initialize Pygame
@@ -11,11 +15,27 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Fire Alarm Simulation")
 
-    switch = Switch(SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT - 100, 100, 50, 'Active', 'Inactive', True)
-    quit_button = Switch(SCREEN_WIDTH - 110, 10, 100, 50, 'Quit', 'Quit', False)
+    ui = Menu(0, SCREEN_HEIGHT - SCREEN_HEIGHT*MENU_HEIGHT_MULTI, SCREEN_WIDTH, SCREEN_HEIGHT, DARK_GREY, '')
 
     # Main loop
     running = True
+    frame = 0
+
+    u, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
+    u_laplace, walls, number_of_frames, iterations, last_update = FDM_laplace()
+    room_frame = 0
+    
+    # Det som er under her + FEM_draw() er laget av KI
+    nt=u.shape[1]
+
+    # x-coordinates in pixels
+    x_pixels = np.linspace(50, SCREEN_WIDTH - 50, number_of_nodes)
+
+    # auto-scale displacement
+    u_max = np.max(np.abs(u))
+    y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) / u_max
+    # Det som kommer under er laget på egenhånd
+
     clock = pygame.time.Clock()
     while running:
         dt = clock.tick(FPS) / 1000
@@ -23,18 +43,26 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                
+            ui.handle_event(event)
         
         # Update
-        switch.update(dt)
-        quit_button.update(dt)
-        if quit_button.state:
+        ui.update(dt)
+        if ui.quit_button.state:
             running = False
-
+        
         # Draw
-        screen.fill(WHITE)
+        screen.fill(GREY)
 
-        switch.draw(screen)
-        quit_button.draw(screen)
+        ui.draw(screen)
+        
+        if ui.wave_sim.state and ui.wave_sim.value == 0:
+            FEM_draw(screen, frame, u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt)
+        if ui.room_toggle.state and ui.room_toggle.value == 0:
+            room_frame = room_frame + (dt * FPS) % number_of_frames
+            draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        frame = (frame + 1) % nt
 
         # Update the display
         pygame.display.flip()
