@@ -20,6 +20,7 @@ def main():
     # Main loop
     running = True
     wave_frame = 0.0
+    coverage_percentage = 0.0
 
     u, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
     u_laplace, walls, number_of_frames, iterations, last_update = FDM_laplace()
@@ -49,7 +50,7 @@ def main():
             ui.handle_event(event)
         
         # Update
-        ui.update(dt)
+        ui.update(dt,coverage_percentage)
         if ui.quit_button.state:
             running = False            
         
@@ -64,8 +65,8 @@ def main():
         if ui.room_toggle.state and ui.room_toggle.value == 0:
             if not ui.pause_button.state:
                 room_frame = (room_frame + dt * FPS * speed) % number_of_frames
-            draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=ui.pause_button.state)
-
+            coverage_percentage = draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=ui.pause_button.state)
+        
         ui.draw(screen)
 
         # Update the display

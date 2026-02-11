@@ -117,3 +117,28 @@ class InputBox:
                 
                     if int(new_text) <= ALARM_MAX: 
                         self.text = new_text
+
+class NumberDisplay:
+    def __init__(self, x, y, width, height, label=''):
+        self.rect = pygame.Rect(x + width, y, width*0.5, height)
+        self.rect_label = pygame.Rect(x, y, width, height)
+        self.color = TOGGLE_ON
+        self.value = 0
+        self.label = label
+        self.font = pygame.font.SysFont(None, 24)
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, self.rect)
+        pygame.draw.rect(screen, self.color, self.rect_label)
+
+        display_text = f"{self.value:.1f}%"
+        text_surf = self.font.render(display_text, True, BLACK)
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        screen.blit(text_surf, text_rect)
+
+        text_surf_label = self.font.render(self.label, True, BLACK)
+        text_rect_label = text_surf_label.get_rect(center=self.rect_label.center)
+        screen.blit(text_surf_label, text_rect_label)
+
+    def update(self, new_value):
+        self.value = new_value  

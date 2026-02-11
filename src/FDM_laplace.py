@@ -125,6 +125,12 @@ def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisati
     vmax = float(np.max(u_frame))
 
     u_frame = np.flipud(np.where(u_frame < 0.01, 0, u_frame))
+
+    covered = u_frame > 0
+    total_cells = covered.size
+    covered_cells = np.sum(covered)
+
+    percentage = 100 * covered_cells / total_cells
     
     # Vectorized RGB conversion - much faster than nested loops!
     if vmax != 0:
@@ -151,6 +157,7 @@ def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisati
         text_rect = text_surf.get_rect(center=screen.get_rect().center)
         screen.blit(text_surf, text_rect)
 
+    return percentage
     # # Draw grid lines
     # n, m = u_frame.shape
     # for i in range(1, n):
