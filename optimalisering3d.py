@@ -73,7 +73,7 @@ res_x3d, res_y3d, res_history3d = loop(
 
 data_to_save = {
     'x': res_x3d,
-    'y': res_y3d,
+    'y': res_y3d, #response
     'history': res_history3d,
     'domain': domain3d
 }
