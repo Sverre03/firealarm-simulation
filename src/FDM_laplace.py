@@ -25,8 +25,8 @@ class Obstacle:
         self.x_end = int(x_end)
         self.y_start = int(y_start)
         self.y_end = int(y_end)
-        self.slice_x = slice(x_start, x_end)
-        self.slice_y = slice(y_start, y_end)
+        self.slice_x = slice(self.x_start, self.x_end)
+        self.slice_y = slice(self.y_start, self.y_end)
 
     def contains(self, x, y):
         return self.x_start <= x <= self.x_end and self.y_start <= y <= self.y_end
