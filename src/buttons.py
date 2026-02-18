@@ -4,9 +4,11 @@ from config import *
 
 # Simple switch button
 class Switch:
-    def __init__(self, x, y, width, height, text_active='Active', text_inactive='Inactive', initial_state=True):
+    def __init__(self, x, y, width, height, text_active='Active', text_inactive='Inactive', active_color=GREEN, inactive_color=RED, initial_state=True):
         self.rect = pygame.Rect(x, y, width, height)
-        self.color = GREEN if initial_state else RED
+        self.active_color = active_color
+        self.inactive_color = inactive_color
+        self.color = self.active_color if initial_state else self.inactive_color
         self.text_active = text_active
         self.text_inactive = text_inactive
         self.text = text_active if initial_state else text_inactive
@@ -28,7 +30,7 @@ class Switch:
             if self.rect.collidepoint(pygame.mouse.get_pos()):
                 print(f'Switch "{self.text}" clicked!')
                 self.state = not self.state
-                self.color = GREEN if self.state else RED
+                self.color = self.active_color if self.state else self.inactive_color
                 self.text = self.text_active if self.state else self.text_inactive
         self.last_switch_time += dt
 
