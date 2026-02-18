@@ -11,10 +11,10 @@ class Menu:
         self.text = text
         self.font = pygame.font.SysFont(None, 24)
 
-        self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-self.menu_height, 100, self.menu_height, 'Quit', 'Quit', False)
+        self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-self.menu_height, 100, self.menu_height, 'Quit', 'Quit', GREEN, RED, False)
         self.room_toggle = Toggle(0, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D room', '2D room', True, 0)
         self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D floor', '2D floor', False, 1)
-        self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Pause', 'Pause', False)
+        self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Pause', 'Pause', GREEN, RED, False)
         self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
         self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
         self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
