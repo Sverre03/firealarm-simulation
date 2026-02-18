@@ -22,20 +22,18 @@ def main():
     wave_frame = 0.0
     coverage_percentage = 0.0
 
-    u, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
-    u_laplace, walls, number_of_frames, iterations, last_update = FDM_laplace()
+    potential, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
+    potential_laplace, walls, number_of_frames, iterations, last_update = FDM_laplace()
     room_frame = 0.0
     
-    # Det som er under her + FEM_draw() er laget av KI
-    nt=u.shape[1]
+    number_of_timesteps=potential.shape[1]
 
     # x-coordinates in pixels
     x_pixels = np.linspace(50, SCREEN_WIDTH - 50, number_of_nodes)
 
     # auto-scale displacement
-    u_max = np.max(np.abs(u))
-    y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) / u_max
-    # Det som kommer under er laget på egenhånd
+    potential_max = np.max(np.abs(potential))
+    y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) / potential_max
 
     clock = pygame.time.Clock()
     while running:
@@ -60,19 +58,17 @@ def main():
         speed = max(0.0, float(ui.animation_speed.number_value))
         if ui.wave_sim.state and ui.wave_sim.value == 0:
             if not ui.pause_button.state:
-                wave_frame = (wave_frame + speed) % nt
-            FEM_draw(screen, int(wave_frame), u, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, nt, paused=ui.pause_button.state)
+                wave_frame = (wave_frame + speed) % number_of_timesteps
+            FEM_draw(screen, int(wave_frame), potential, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, number_of_timesteps, paused=ui.pause_button.state)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
             if not ui.pause_button.state:
                 room_frame = (room_frame + dt * FPS * speed) % number_of_frames
-            coverage_percentage = draw_frame(screen, u_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=ui.pause_button.state)
+            coverage_percentage = draw_frame(screen, potential_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=ui.pause_button.state)
         
         ui.draw(screen)
 
-        # Update the display
         pygame.display.flip()
 
-    # Quit Pygame
     pygame.quit()
 
 if __name__ == "__main__":
