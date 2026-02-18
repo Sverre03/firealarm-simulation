@@ -83,6 +83,7 @@ class InputBox:
         self.font = pygame.font.SysFont(None, 24)
         self.active = False
         self.number_value = 2
+        self.number_value_past = self.number_value
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
@@ -107,8 +108,13 @@ class InputBox:
         if event.type == pygame.KEYDOWN and self.active:
             if event.key == pygame.K_RETURN:
                 if self.text.isdigit():
-                    self.number_value = int(self.text)
-                    print("Number set to:", self.number_value)
+                    new_value = int(self.text)
+
+                    # Only update if value actually changed
+                    if new_value != self.number_value:
+                        self.number_value_past = self.number_value  # store old value
+                        self.number_value = new_value               # set new value
+                        
                 self.text = ""
                 self.active = False 
             elif event.key == pygame.K_BACKSPACE:
@@ -119,6 +125,7 @@ class InputBox:
                 
                     if int(new_text) <= ALARM_MAX: 
                         self.text = new_text
+        
 
 class NumberDisplay:
     def __init__(self, x, y, width, height, label=''):

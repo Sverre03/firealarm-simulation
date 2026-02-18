@@ -21,6 +21,8 @@ def main():
     running = True
     wave_frame = 0.0
     coverage_percentage = 0.0
+    max_coverage_percentage = 0.0
+    number_values = [0.0, 0.0]  # List to hold values for updating the UI
 
     potential, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
     potential_laplace, walls, number_of_frames, iterations, last_update = FDM_laplace()
@@ -48,7 +50,9 @@ def main():
             ui.handle_event(event)
         
         # Update
-        ui.update(dt,coverage_percentage)
+        number_values[0] = coverage_percentage
+        number_values[1] = max_coverage_percentage
+        ui.update(dt,number_values[0:])
         if ui.quit_button.state:
             running = False            
         
@@ -64,7 +68,15 @@ def main():
             if not ui.pause_button.state:
                 room_frame = (room_frame + dt * FPS * speed) % number_of_frames
             coverage_percentage = draw_frame(screen, potential_laplace, walls, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=ui.pause_button.state)
-        
+            if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
+                max_coverage_percentage = coverage_percentage
+                ui.alarm_amount_room.number_value_past = ui.alarm_amount_room.number_value
+            else:
+                # Continue tracking max
+                max_coverage_percentage = max(max_coverage_percentage, coverage_percentage)
+
+
+            
         ui.draw(screen)
 
         pygame.display.flip()
