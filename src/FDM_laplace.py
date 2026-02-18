@@ -91,6 +91,7 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
         potential_new = update_coeff * ((right_effective + left_effective) * dy**2 + (up_effective + down_effective) * dx**2)
         interior_obstacles = obstacle_mask[1:grid_x, 1:grid_y]
         potential[1:grid_x, 1:grid_y] = np.where(interior_obstacles, 0.0, potential_new)
+        potential[grid_x//2, grid_y//2] = source_strength
 
         delta = np.abs(potential - potential_old)
         update = np.max(delta[1:grid_x, 1:grid_y])
@@ -101,7 +102,8 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
         if iteration % 10 == 0:
             frame_index += 1
             potential_frames[:,:,frame_index] = potential.copy()
-            print(f"Iteration {iteration}: max update {update}")
+            if iteration % 1000 == 0:
+                print(f"Iteration {iteration}: max update {update}")
 
         
     print(f"Did not converge after maximum iterations ({max_iter}) with max update {update}")
@@ -122,7 +124,7 @@ def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT,
         return
 
 
-    potential_frame = np.flipud(np.where(potential_frame < 0.01, 0, potential_frame))
+    potential_frame = np.flipud(np.where(potential_frame < 0.1, 0, potential_frame))
 
     covered = potential_frame > 0
     total_cells = covered.size
@@ -140,6 +142,7 @@ def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT,
         color_map_values = np.zeros_like(potential_frame, dtype=np.uint8)
     
     rgb = np.stack([color_map_values, color_map_values, color_map_values], axis=2)
+    rgb = np.ascontiguousarray(rgb)
     
     surface = pygame.surfarray.make_surface(rgb)
 
