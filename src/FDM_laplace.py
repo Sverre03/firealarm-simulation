@@ -6,25 +6,25 @@ from config import *
 # Laplace's equation d^2u/dx^2 + d^2u/dy^2 = 0
 
 # Laplace's equation assuming dx and dy constant and using central difference
-# d^2u/dx^2 = (u[i+1,j] - 2u[i,j] + u[i-1,j]) / delta_x^2
-# d^2u/dy^2 = (u[i,j+1] - 2u[i,j] + u[i,j-1]) / delta_y^2
+# d^2u/dx^2 = (potential[i+1,j] - 2u[i,j] + potential[i-1,j]) / delta_x^2
+# d^2u/dy^2 = (potential[i,j+1] - 2u[i,j] + potential[i,j-1]) / delta_y^2
 
 # Letting delta_x = delta_y:
-# => delta_u[i,j] = (u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1]) / 4 - u[i,j]
+# => delta_u[i,j] = (potential[i+1,j] + potential[i-1,j] + potential[i,j+1] + potential[i,j-1]) / 4 - potential[i,j]
 
-# Update u
-# u[i,j] = u[i,j] + delta_u[i,j]
+# Update potential
+# potential[i,j] = potential[i,j] + delta_u[i,j]
 
-class Wall:
+class Obstacle:
     def __init__(self, x_start, x_end, y_start, y_end):
-        n = 100
-        m = 100
+        grid_x = 100
+        grid_y = 100
         Lx = 10.0
         Ly = 20.0
-        self.x_start = x_start
-        self.x_end = x_end
-        self.y_start = y_start
-        self.y_end = y_end
+        self.x_start = int(x_start)
+        self.x_end = int(x_end)
+        self.y_start = int(y_start)
+        self.y_end = int(y_end)
         self.slice_x = slice(x_start, x_end)
         self.slice_y = slice(y_start, y_end)
 
@@ -36,119 +36,117 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     # Constants
     Lx = 10.0 # Length in x-direction
     Ly = 20.0 # Length in y-direction
-    n = 100
-    m = 100
-    dx = Lx / n
-    dy = Ly / m
-    u_max = 800.0
+    grid_x = 100
+    grid_y = 100
+    dx = Lx / grid_x
+    dy = Ly / grid_y
+    source_strength = 800.0
 
-    u = np.zeros((n+1, m+1))
+    potential = np.zeros((grid_x+1, grid_y+1))
 
 
     # Boundary conditions
-    walls = np.zeros((n+1, m+1), dtype=bool)  # wall mask for interior obstacles
-    u[:, 0] = 0.0  # u(x,0) = 0
-    u[:, m] = 0.0  # u(x,Ly) = 0
-    u[0, :] = 0.0  # u(0,y) = 0
-    u[n, :] = 0.0  # u(Lx,y) = 0
-    u[n//2, m//2] = u_max
+    obstacles = np.zeros((grid_x+1, grid_y+1), dtype=bool)  # obstacle mask for interior obstacles
+    potential[:, 0] = 0.0  # potential(x,0) = 0
+    potential[:, grid_y] = 0.0  # potential(x,Ly) = 0
+    potential[0, :] = 0.0  # potential(0,y) = 0
+    potential[grid_x, :] = 0.0  # potential(Lx,y) = 0
+    potential[grid_x//2, grid_y//2] = source_strength
 
-    # Walls
-    wall_pixels = np.zeros((n+1, m+1), dtype=bool)
+    # Obstacles
+    obstacle_mask = np.zeros((grid_x+1, grid_y+1), dtype=bool)
 
-    walls = [Wall(int(0.25*n), int(0.75*n), int(0.33*m), int(0.33*m + 4)),
-             Wall(int(0.75*n), int(0.75*n + 2), int(0.5*m), int(0.75*m)),
-             Wall(int(0.5*n), int(0.75*n), int(0.25*m), int(0.25*m + 2))]
+    obstacles = [Obstacle(0.25*grid_x, 0.75*grid_x, 0.33*grid_y, 0.33*grid_y + 4),
+             Obstacle(0.75*grid_x, 0.75*grid_x + 2, 0.5*grid_y, 0.75*grid_y),
+             Obstacle(0.5*grid_x, 0.75*grid_x, 0.25*grid_y, 0.25*grid_y + 2)]
     
-    for wall in walls:
-        wall_pixels[wall.slice_x, wall.slice_y] = True
+    for obstacle in obstacles:
+        obstacle_mask[obstacle.slice_x, obstacle.slice_y] = True
  
-    c = 1.0 / (2.0 * (dx**2 + dy**2)) # constant factor in update formula
+    update_coeff = 1.0 / (2.0 * (dx**2 + dy**2)) # constant factor in update formula
 
     # Propagation/Calculation
-    frame = 0
-    u_animation = np.zeros((u.shape[0], u.shape[1], max_iter // 10))
-    u_animation[:,:,frame] = u.copy()
-    for it in range(max_iter):
-        u_old = u.copy()
-        max_diff = 0.0
+    frame_index = 0
+    potential_frames = np.zeros((potential.shape[0], potential.shape[1], max_iter // 10))
+    potential_frames[:,:,frame_index] = potential.copy()
+    for iteration in range(max_iter):
+        potential_old = potential.copy()
+        update = 0.0
 
-        left = u_old[0:n-1, 1:m]
-        right = u_old[2:n+1, 1:m]
-        down = u_old[1:n, 0:m-1]
-        up = u_old[1:n, 2:m+1]
+        neighbor_left = potential_old[0:grid_x-1, 1:grid_y]
+        neighbor_right = potential_old[2:grid_x+1, 1:grid_y]
+        neighbor_down = potential_old[1:grid_x, 0:grid_y-1]
+        neighbor_up = potential_old[1:grid_x, 2:grid_y+1]
 
-        wall_left = wall_pixels[0:n-1, 1:m]
-        wall_right = wall_pixels[2:n+1, 1:m]
-        wall_down = wall_pixels[1:n, 0:m-1]
-        wall_up = wall_pixels[1:n, 2:m+1]
+        obstacle_left_mask = obstacle_mask[0:grid_x-1, 1:grid_y]
+        obstacle_right_mask = obstacle_mask[2:grid_x+1, 1:grid_y]
+        obstacle_down_mask = obstacle_mask[1:grid_x, 0:grid_y-1]
+        obstacle_up_mask = obstacle_mask[1:grid_x, 2:grid_y+1]
 
-        left_eff = np.where(wall_left, right, left)
-        right_eff = np.where(wall_right, left, right)
-        down_eff = np.where(wall_down, up, down)
-        up_eff = np.where(wall_up, down, up)
+        left_effective = np.where(obstacle_left_mask, neighbor_right, neighbor_left) # Alle steder hvor vi har en vegg til venstre, bruker vi verdien til høyre for veggen, eller bruker vi verdien til venstre
+        right_effective = np.where(obstacle_right_mask, neighbor_left, neighbor_right)
+        down_effective = np.where(obstacle_down_mask, neighbor_up, neighbor_down)
+        up_effective = np.where(obstacle_up_mask, neighbor_down, neighbor_up)
 
-        u_new = c * ((right_eff + left_eff) * dy**2 + (up_eff + down_eff) * dx**2)
-        interior_walls = wall_pixels[1:n, 1:m]
-        u[1:n, 1:m] = np.where(interior_walls, 0.0, u_new)
+        potential_new = update_coeff * ((right_effective + left_effective) * dy**2 + (up_effective + down_effective) * dx**2)
+        interior_obstacles = obstacle_mask[1:grid_x, 1:grid_y]
+        potential[1:grid_x, 1:grid_y] = np.where(interior_obstacles, 0.0, potential_new)
 
-        diff = np.abs(u - u_old)
-        max_diff = np.max(diff[1:n, 1:m])
+        delta = np.abs(potential - potential_old)
+        update = np.max(delta[1:grid_x, 1:grid_y])
 
-        if max_diff < tol:
-            print(f"Converged after {it + 1} iterations with max update {max_diff}")
-            return u_animation, walls, frame + 1, it + 1, max_diff
-        if it % 10 == 0:
-            frame += 1
-            u_animation[:,:,frame] = u.copy()
-            print(f"Iteration {it}: max update {max_diff}")
+        if update < tol:
+            print(f"Converged after {iteration + 1} iterations with max update {update}")
+            return potential_frames, obstacles, frame_index + 1, iteration + 1, update
+        if iteration % 10 == 0:
+            frame_index += 1
+            potential_frames[:,:,frame_index] = potential.copy()
+            print(f"Iteration {iteration}: max update {update}")
 
         
-    print(f"Did not converge after maximum iterations ({max_iter}) with max update {max_diff}")
-    u_animation = u_animation[:,:,:frame+1]
-    return u_animation, walls, frame + 1, max_iter, max_diff
+    print(f"Did not converge after maximum iterations ({max_iter}) with max update {update}")
+    potential_frames = potential_frames[:,:,:frame_index+1]
+    return potential_frames, obstacles, frame_index + 1, max_iter, update
 
-def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=False):
-    if u is None:
+def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=False):
+    if potential is None:
         return
 
-    if u.ndim == 2:
-        u_frame = u
+    if potential.ndim == 2:
+        potential_frame = potential
     else:
-        frame_index = frame % u.shape[2]
-        u_frame = u[:, :, frame_index]
+        frame_index = frame % potential.shape[2]
+        potential_frame = potential[:, :, frame_index]
 
-    if np.all(u_frame == 0):
+    if np.all(potential_frame == 0):
         return
 
-    vmin = float(np.min(u_frame))
-    vmax = float(np.max(u_frame))
 
-    u_frame = np.flipud(np.where(u_frame < 0.01, 0, u_frame))
+    potential_frame = np.flipud(np.where(potential_frame < 0.01, 0, potential_frame))
 
-    covered = u_frame > 0
+    covered = potential_frame > 0
     total_cells = covered.size
     covered_cells = np.sum(covered)
 
     percentage = 100 * covered_cells / total_cells
     
-    # Vectorized RGB conversion - much faster than nested loops!
-    if vmax != 0:
-        cmap_values = (255 * u_frame / vmax).astype(np.uint8)
-    else:
-        cmap_values = np.zeros_like(u_frame, dtype=np.uint8)
+    vmin = float(np.min(potential_frame))
+    vmax = float(np.max(potential_frame))
     
-    # Create RGB array by stacking grayscale values
-    rgb = np.stack([cmap_values, cmap_values, cmap_values], axis=2)
+    # For normalization
+    if vmax != 0:
+        color_map_values = (255 * potential_frame / vmax).astype(np.uint8)
+    else:
+        color_map_values = np.zeros_like(potential_frame, dtype=np.uint8)
+    
+    rgb = np.stack([color_map_values, color_map_values, color_map_values], axis=2)
     
     surface = pygame.surfarray.make_surface(rgb)
 
     target_rect = screen.get_rect().copy()
     target_rect.height = max(1, target_rect.height - MENU_HEIGHT_MULTI * SCREEN_HEIGHT)
     surface = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
-    # Walls
-    # for wall in walls:
-        # pygame.draw.rect(surface, RED, wall.rect)
+  
     screen.blit(surface, target_rect)
 
     if paused:
@@ -159,22 +157,22 @@ def draw_frame(screen, u, walls, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisati
 
     return percentage
     # # Draw grid lines
-    # n, m = u_frame.shape
-    # for i in range(1, n):
-    #     x = i * target_rect.width // n
+    # grid_x, grid_y = potential_frame.shape
+    # for i in range(1, grid_x):
+    #     x = i * target_rect.width // grid_x
     #     pygame.draw.line(screen, DARK_GREY, (x, target_rect.top), (x, target_rect.bottom))
-    # for j in range(1, m):
-    #     y = j * target_rect.height // m
+    # for j in range(1, grid_y):
+    #     y = j * target_rect.height // grid_y
     #     pygame.draw.line(screen, DARK_GREY, (target_rect.left, y), (target_rect.right, y))
 
-    # cell_width = target_rect.width / n
-    # cell_height = target_rect.height / m
-    # for wall in walls:
-    #     wall_rect = pygame.Rect(
-    #         target_rect.left + wall.x_start * cell_width,
-    #         target_rect.top + wall.y_start * cell_height,
-    #         (wall.x_end - wall.x_start) * cell_width,
-    #         (wall.y_end - wall.y_start) * cell_height
+    # cell_width = target_rect.width / grid_x
+    # cell_height = target_rect.height / grid_y
+    # for obstacle in obstacles:
+    #     obstacle_rect = pygame.Rect(
+    #         target_rect.left + obstacle.x_start * cell_width,
+    #         target_rect.top + obstacle.y_start * cell_height,
+    #         (obstacle.x_end - obstacle.x_start) * cell_width,
+    #         (obstacle.y_end - obstacle.y_start) * cell_height
     #     )
-    #     pygame.draw.rect(screen, RED, wall_rect)
+    #     pygame.draw.rect(screen, RED, obstacle_rect)
 
