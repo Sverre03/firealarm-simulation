@@ -24,7 +24,7 @@ class Menu:
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
         self.max_coverage_percentage_room = NumberDisplay(0, 30, 140, 30, 'Max coverage:')
         self.potential_max = NumberDisplay(0, 60, 140, 30, 'Potential max:')
-        self.add_obstacle = InputMultipleBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height // 2, 150, self.menu_height//2, 'Add obstacle (x,y,w,h):')
+        self.add_obstacle = InputMultipleBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height // 2, 200, self.menu_height//2, 'Add obstacle (x,y,w,h):')
 
         self.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
 

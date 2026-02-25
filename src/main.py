@@ -4,7 +4,7 @@ from buttons import *
 from config import *
 from ui import *
 from FEM import FEM_draw, FEM_setup
-from FDM_laplace import FDM_laplace, draw_frame
+from FDM_laplace import Room
 
 def main():
     # Initialize Pygame
@@ -25,7 +25,8 @@ def main():
     number_values = [0.0, 0.0, 0.0]  # List to hold values for updating the UI
 
     potential_1D_wave, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
-    potential_2D_laplace, obstacles, number_of_frames, iterations, last_update = FDM_laplace()
+    room2D = Room()
+    potential_2D_laplace, number_of_frames, iterations, last_update = room2D.calculate_potential()
     room_frame = 0.0
     
     number_of_timesteps=potential_1D_wave.shape[1]
@@ -69,15 +70,13 @@ def main():
         if ui.room_toggle.state and ui.room_toggle.value == 0:
             if not ui.pause_button.state:
                 room_frame = (room_frame + dt * FPS * speed) % number_of_frames
-            coverage_percentage = draw_frame(screen, potential_2D_laplace, obstacles, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, paused=ui.pause_button.state)  
+            coverage_percentage = room2D.draw_frame(screen, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, paused=ui.pause_button.state)  
             if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
                 max_coverage_percentage = coverage_percentage
                 ui.alarm_amount_room.number_value_past = ui.alarm_amount_room.number_value
             else:
                 # Continue tracking max
                 max_coverage_percentage = max(max_coverage_percentage, coverage_percentage)
-
-
             
         ui.draw(screen)
 
