@@ -193,6 +193,7 @@ Force_vector = np.zeros(np.shape(A)[0])  # empty for now
 def solve_system(x, y, threshold=60):
     idx = y * M_x + x
     Force_vector[idx] = 100
+
     Force_vector_dummy = Force_vector.copy()
     Force_vector_sorted = Force_vector.copy()
 
@@ -232,7 +233,7 @@ def solve_system(x, y, threshold=60):
 
     solution_free, info = spla.cg(A_sparse, Force_vector_reduced, M=M_inv, rtol=1e-8)
 
-    result = numpy.asarray((solution_free > threshold).astype(int))
+    result = numpy.asarray((abs(solution_free) > threshold).astype(int))
 
     return result.mean()
 
