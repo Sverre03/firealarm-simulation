@@ -15,6 +15,12 @@ from config import *
 # Update potential
 # potential[i,j] = potential[i,j] + delta_u[i,j]
 
+class Source:
+    def __init__(self, x, y, strength):
+        self.x = int(x)
+        self.y = int(y)
+        self.strength = strength
+
 class Obstacle:
     def __init__(self, x_start, x_end, y_start, y_end):
         grid_x = 100
@@ -51,7 +57,6 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     potential[:, grid_y] = 0.0  # potential(x,Ly) = 0
     potential[0, :] = 0.0  # potential(0,y) = 0
     potential[grid_x, :] = 0.0  # potential(Lx,y) = 0
-    potential[grid_x//2, grid_y//2] = source_strength
 
     # Obstacles
     obstacle_mask = np.zeros((grid_x+1, grid_y+1), dtype=bool)
@@ -62,8 +67,13 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     
     for obstacle in obstacles:
         obstacle_mask[obstacle.slice_x, obstacle.slice_y] = True
+
+    # Sources
+    sources = [Source(0.5*grid_x, 0.5*grid_y, source_strength), 
+               Source(0.15*grid_x, 0.25*grid_y, 0.5*source_strength), 
+               Source(0.8*grid_x, 0.25*grid_y, 0.5*source_strength)]
  
-    update_coeff = 1.0 / (2.0 * (dx**2 + dy**2)) # constant factor in update formula
+    denom = 2.0 / dx**2 + 2.0 / dy**2  # factor for dx != dy
 
     # Propagation/Calculation
     frame_index = 0
@@ -88,10 +98,11 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
         down_effective = np.where(obstacle_down_mask, neighbor_up, neighbor_down)
         up_effective = np.where(obstacle_up_mask, neighbor_down, neighbor_up)
 
-        potential_new = update_coeff * ((right_effective + left_effective) * dy**2 + (up_effective + down_effective) * dx**2)
+        potential_new = (1.0 / denom) * ((right_effective + left_effective) / dx**2 + (up_effective + down_effective) / dy**2)
         interior_obstacles = obstacle_mask[1:grid_x, 1:grid_y]
         potential[1:grid_x, 1:grid_y] = np.where(interior_obstacles, 0.0, potential_new)
-        potential[grid_x//2, grid_y//2] = source_strength
+        for source in sources:
+            potential[source.x, source.y] = source.strength
 
         delta = np.abs(potential - potential_old)
         update = np.max(delta[1:grid_x, 1:grid_y])
@@ -110,9 +121,9 @@ def FDM_laplace(tol=5e-4, max_iter=20000):
     potential_frames = potential_frames[:,:,:frame_index+1]
     return potential_frames, obstacles, frame_index + 1, max_iter, update
 
-def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=False):
+def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT, paused=False):
     if potential is None:
-        return
+        return 0.0
 
     if potential.ndim == 2:
         potential_frame = potential
@@ -121,7 +132,7 @@ def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT,
         potential_frame = potential[:, :, frame_index]
 
     if np.all(potential_frame == 0):
-        return
+        return 0.0
 
 
     potential_frame = np.flipud(np.where(potential_frame < 0.1, 0, potential_frame))
@@ -132,17 +143,10 @@ def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT,
 
     percentage = 100 * covered_cells / total_cells
     
-    vmin = float(np.min(potential_frame))
-    vmax = float(np.max(potential_frame))
+    potential_max = float(np.max(potential_frame))
+    color_map_values = (255 * potential_frame / potential_max).astype(np.uint8)
     
-    # For normalization
-    if vmax != 0:
-        color_map_values = (255 * potential_frame / vmax).astype(np.uint8)
-    else:
-        color_map_values = np.zeros_like(potential_frame, dtype=np.uint8)
-    
-    rgb = np.stack([color_map_values, color_map_values, color_map_values], axis=2)
-    rgb = np.ascontiguousarray(rgb)
+    rgb = convert_to_rgb(color_map_values, color_map="rainbow")
     
     surface = pygame.surfarray.make_surface(rgb)
 
@@ -159,23 +163,18 @@ def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT,
         screen.blit(text_surf, text_rect)
 
     return percentage
-    # # Draw grid lines
-    # grid_x, grid_y = potential_frame.shape
-    # for i in range(1, grid_x):
-    #     x = i * target_rect.width // grid_x
-    #     pygame.draw.line(screen, DARK_GREY, (x, target_rect.top), (x, target_rect.bottom))
-    # for j in range(1, grid_y):
-    #     y = j * target_rect.height // grid_y
-    #     pygame.draw.line(screen, DARK_GREY, (target_rect.left, y), (target_rect.right, y))
 
-    # cell_width = target_rect.width / grid_x
-    # cell_height = target_rect.height / grid_y
-    # for obstacle in obstacles:
-    #     obstacle_rect = pygame.Rect(
-    #         target_rect.left + obstacle.x_start * cell_width,
-    #         target_rect.top + obstacle.y_start * cell_height,
-    #         (obstacle.x_end - obstacle.x_start) * cell_width,
-    #         (obstacle.y_end - obstacle.y_start) * cell_height
-    #     )
-    #     pygame.draw.rect(screen, RED, obstacle_rect)
+def convert_to_rgb(values, color_map="rainbow"):
+    if color_map == "rainbow":
+        cmap = plt.get_cmap("rainbow")
+    elif color_map == "hot":
+        cmap = plt.get_cmap("hot")
+    else:
+        cmap = plt.get_cmap("viridis")
 
+    normalised_values = values / 255.0
+    rgba_colors = cmap(normalised_values)
+    rgb_colors = (rgba_colors[:, :, :3] * 255).astype(np.uint8)
+    zero_mask = values == 0
+    rgb_colors = np.where(zero_mask[..., None], 0, rgb_colors)
+    return rgb_colors
