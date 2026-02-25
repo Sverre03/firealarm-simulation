@@ -16,12 +16,15 @@ class Menu:
         self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D floor', '2D floor', False, 1)
         self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Pause', 'Pause', GREEN, RED, False)
         self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
-        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
         self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
         self.animation_speed = InputBox(0, 0, 140, 30, 'Speed:')
         self.animation_speed.number_value = 1
+
+        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
         self.max_coverage_percentage_room = NumberDisplay(0, 30, 140, 30, 'Max coverage:')
+        self.potential_max = NumberDisplay(0, 60, 140, 30, 'Potential max:')
+        self.add_obstacle = InputMultipleBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height // 2, 200, self.menu_height//2, 'Add obstacle (x,y,w,h):')
 
         self.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
 
@@ -60,11 +63,12 @@ class Menu:
         # Draw input boxes if toggles are active
         if self.room_toggle.state and self.room_toggle.value == 0:
             self.alarm_amount_room.draw(screen)
-            self.coverage_percentage_room.draw(screen)
-            self.max_coverage_percentage_room.draw(screen)
+            self.coverage_percentage_room.draw(screen, "%")
+            self.max_coverage_percentage_room.draw(screen, "%")
+            self.potential_max.draw(screen)
+            self.add_obstacle.draw(screen)
         if self.floor_toggle.state and self.floor_toggle.value == 0:
             self.alarm_amount_floor.draw(screen)
-
     def update(self, dt, value):
         self.quit_button.update(dt)
         self.pause_button.update(dt)
@@ -74,6 +78,7 @@ class Menu:
             self.wave_sim.value = 1
             self.coverage_percentage_room.update(value[0])
             self.max_coverage_percentage_room.update(value[1])
+            self.potential_max.update(value[2])
         self.floor_toggle.update(dt)
         if self.floor_toggle.state and self.floor_toggle.value ==0:
             self.room_toggle.value = 1
@@ -88,6 +93,7 @@ class Menu:
         self.animation_speed.handle_event(event)
         if self.room_toggle.state and self.room_toggle.value ==0:
             self.alarm_amount_room.handle_event(event)
+            self.add_obstacle.handle_event(event)
 
         if self.floor_toggle.state and self.floor_toggle.value ==0:
             self.alarm_amount_floor.handle_event(event)

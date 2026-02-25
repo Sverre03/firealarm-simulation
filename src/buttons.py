@@ -125,6 +125,69 @@ class InputBox:
                 
                     if int(new_text) <= ALARM_MAX: 
                         self.text = new_text
+
+# Used for adding parameters for obstacles (x, y, width, height), separated by space, comma or semicolon
+class InputMultipleBox:
+    def __init__(self, x, y, width, height, label='', max_value=OBSTACLE_MAX_SIZE):
+        self.max_value = max_value
+        self.number_values = []
+        self.number_value = 0
+        self.rect = pygame.Rect(x + width, y, width*0.5, height)
+        self.rect_label = pygame.Rect(x, y, width, height)
+        self.color = WHITE
+        self.text = ""
+        self.label = label
+        self.font = pygame.font.SysFont(None, 24)
+        self.active = False
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, self.rect)
+        pygame.draw.rect(screen, TOGGLE_ON, self.rect_label)
+
+        display_text = self.text+'_' if self.active else str(self.number_value)
+        text_surf = self.font.render(display_text, True, BLACK)
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        screen.blit(text_surf, text_rect)
+
+        text_surf_label = self.font.render(self.label, True, BLACK)
+        text_rect_label = text_surf_label.get_rect(center=self.rect_label.center)
+        screen.blit(text_surf_label, text_rect_label)
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.rect.collidepoint(event.pos):
+                self.active = True
+            else:
+                self.active = False
+
+        if event.type == pygame.KEYDOWN and self.active:
+            if event.key == pygame.K_RETURN:
+                delimiters = [',', ';', ' ']
+                for d in delimiters:
+                    if d in self.text:
+                        parts = self.text.split(d)
+                        break
+                else:
+                    parts = [self.text]
+
+                try:
+                    values = [int(part.strip()) for part in parts]
+                    if len(values) == 4 and all(OBSTACLE_MIN_SIZE <= v <= self.max_value for v in values):
+                        self.number_values = values
+                        print(f"New obstacle with (x, y, width, height): {self.number_values}")
+                        # Må returnere verdiene eller noe
+                    else:
+                        print(f"Enter 4 integers between 1 and {self.max_value}.")
+                except ValueError:
+                    print("Invalid input. Please enter integers separated by space, comma, or semicolon.")
+
+                self.text = ""
+                self.active = False 
+            elif event.key == pygame.K_BACKSPACE:
+                self.text = self.text[:-1]
+            else:
+                if event.unicode.isdigit() or event.unicode in [',', ';', ' ']:
+                    self.text += event.unicode
         
 
 class NumberDisplay:
@@ -136,11 +199,11 @@ class NumberDisplay:
         self.label = label
         self.font = pygame.font.SysFont(None, 24)
 
-    def draw(self, screen):
+    def draw(self, screen, suffix=''):
         pygame.draw.rect(screen, self.color, self.rect)
         pygame.draw.rect(screen, self.color, self.rect_label)
 
-        display_text = f"{self.value:.1f}%"
+        display_text = f"{self.value:.1f}{suffix}"
         text_surf = self.font.render(display_text, True, BLACK)
         text_rect = text_surf.get_rect(center=self.rect.center)
         screen.blit(text_surf, text_rect)

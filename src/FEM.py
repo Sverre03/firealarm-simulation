@@ -1,7 +1,6 @@
 import numpy as np
 from numba import njit
 from config import *
-import matplotlib.pyplot as plt
 import pygame 
 import Newmark
 
@@ -20,16 +19,10 @@ def FEM_setup(WIDTH, HEIGHT):
     N = 1/2 * np.array([gamma**2 - gamma, 2*(1-gamma**2), gamma**2 + gamma])
     B = 1/2 * 2/h * np.array([2*gamma-1,-4*gamma, 2*gamma + 1])
 
-    K_dummy = np.zeros((3,3,np.size(gamma)))
-
-    for i in range(np.size(gamma)):
-        K_dummy[:,:,i] =c**2 * np.outer(B[:,i],B[:,i])
+    K_dummy = c**2 * np.einsum("ik,jk->ijk", B, B)
 
     K_element = h/2 * np.trapezoid(K_dummy,axis=2,dx=dgamma)
-    M_dummy = np.zeros((3,3,np.size(gamma)))
-
-    for i in range(np.size(gamma)):
-        M_dummy[:,:,i] = np.outer(N[:,i],N[:,i])
+    M_dummy = np.einsum("ik,jk->ijk", N, N)
 
     M_element = h/2 * mu*epsilon*np.trapezoid(M_dummy,axis=2,dx=dgamma)
     K_global = np.zeros((number_of_nodes,number_of_nodes))
@@ -40,7 +33,7 @@ def FEM_setup(WIDTH, HEIGHT):
 
     C = 0.0001*K_global+0.0001*M_global
 
-    t = np.linspace(0,100,10000)
+    t = np.linspace(0,20,2000)
     dt = t[1]-t[0]
     f = np.zeros((number_of_nodes,np.size(t)))
 

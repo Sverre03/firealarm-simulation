@@ -3,22 +3,28 @@ import matplotlib.pyplot as plt
 import pygame
 from config import *
 
-# Laplace's equation d^2u/dx^2 + d^2u/dy^2 = 0
+# Laplace's equation d^2u/self.dx^2 + d^2u/self.dy^2 = 0
 
-# Laplace's equation assuming dx and dy constant and using central difference
-# d^2u/dx^2 = (potential[i+1,j] - 2u[i,j] + potential[i-1,j]) / delta_x^2
-# d^2u/dy^2 = (potential[i,j+1] - 2u[i,j] + potential[i,j-1]) / delta_y^2
+# Laplace's equation assuming self.dx and self.dy constant and using central difference
+# d^2u/self.dx^2 = (self.potential[i+1,j] - 2u[i,j] + self.potential[i-1,j]) / delta_x^2
+# d^2u/self.dy^2 = (self.potential[i,j+1] - 2u[i,j] + self.potential[i,j-1]) / delta_y^2
 
 # Letting delta_x = delta_y:
-# => delta_u[i,j] = (potential[i+1,j] + potential[i-1,j] + potential[i,j+1] + potential[i,j-1]) / 4 - potential[i,j]
+# => delta_u[i,j] = (self.potential[i+1,j] + self.potential[i-1,j] + self.potential[i,j+1] + self.potential[i,j-1]) / 4 - self.potential[i,j]
 
-# Update potential
-# potential[i,j] = potential[i,j] + delta_u[i,j]
+# Update self.potential
+# self.potential[i,j] = self.potential[i,j] + delta_u[i,j]
+
+class Source:
+    def __init__(self, x, y, strength):
+        self.x = int(x)
+        self.y = int(y)
+        self.strength = strength
 
 class Obstacle:
     def __init__(self, x_start, x_end, y_start, y_end):
-        grid_x = 100
-        grid_y = 100
+        self.grid_x = 100
+        self.grid_y = 100
         Lx = 10.0
         Ly = 20.0
         self.x_start = int(x_start)
@@ -30,152 +36,154 @@ class Obstacle:
 
     def contains(self, x, y):
         return self.x_start <= x <= self.x_end and self.y_start <= y <= self.y_end
-
-def FDM_laplace(tol=5e-4, max_iter=20000):
-
-    # Constants
-    Lx = 10.0 # Length in x-direction
-    Ly = 20.0 # Length in y-direction
-    grid_x = 100
-    grid_y = 100
-    dx = Lx / grid_x
-    dy = Ly / grid_y
-    source_strength = 800.0
-
-    potential = np.zeros((grid_x+1, grid_y+1))
-
-
-    # Boundary conditions
-    obstacles = np.zeros((grid_x+1, grid_y+1), dtype=bool)  # obstacle mask for interior obstacles
-    potential[:, 0] = 0.0  # potential(x,0) = 0
-    potential[:, grid_y] = 0.0  # potential(x,Ly) = 0
-    potential[0, :] = 0.0  # potential(0,y) = 0
-    potential[grid_x, :] = 0.0  # potential(Lx,y) = 0
-    potential[grid_x//2, grid_y//2] = source_strength
-
-    # Obstacles
-    obstacle_mask = np.zeros((grid_x+1, grid_y+1), dtype=bool)
-
-    obstacles = [Obstacle(0.25*grid_x, 0.75*grid_x, 0.33*grid_y, 0.33*grid_y + 4),
-             Obstacle(0.75*grid_x, 0.75*grid_x + 2, 0.5*grid_y, 0.75*grid_y),
-             Obstacle(0.5*grid_x, 0.75*grid_x, 0.25*grid_y, 0.25*grid_y + 2)]
     
-    for obstacle in obstacles:
-        obstacle_mask[obstacle.slice_x, obstacle.slice_y] = True
- 
-    update_coeff = 1.0 / (2.0 * (dx**2 + dy**2)) # constant factor in update formula
+class Room:
+    def __init__(self):
+        # Constants
+        Lx = 10.0 # Length in x-direction
+        Ly = 20.0 # Length in y-direction
+        self.grid_x = 100
+        self.grid_y = 100
+        self.dx = Lx / self.grid_x
+        self.dy = Ly / self.grid_y
+        self.source_strength = 800.0
 
-    # Propagation/Calculation
-    frame_index = 0
-    potential_frames = np.zeros((potential.shape[0], potential.shape[1], max_iter // 10))
-    potential_frames[:,:,frame_index] = potential.copy()
-    for iteration in range(max_iter):
-        potential_old = potential.copy()
-        update = 0.0
+        self.potential = np.zeros((self.grid_x+1, self.grid_y+1))
 
-        neighbor_left = potential_old[0:grid_x-1, 1:grid_y]
-        neighbor_right = potential_old[2:grid_x+1, 1:grid_y]
-        neighbor_down = potential_old[1:grid_x, 0:grid_y-1]
-        neighbor_up = potential_old[1:grid_x, 2:grid_y+1]
-
-        obstacle_left_mask = obstacle_mask[0:grid_x-1, 1:grid_y]
-        obstacle_right_mask = obstacle_mask[2:grid_x+1, 1:grid_y]
-        obstacle_down_mask = obstacle_mask[1:grid_x, 0:grid_y-1]
-        obstacle_up_mask = obstacle_mask[1:grid_x, 2:grid_y+1]
-
-        left_effective = np.where(obstacle_left_mask, neighbor_right, neighbor_left) # Alle steder hvor vi har en vegg til venstre, bruker vi verdien til høyre for veggen, eller bruker vi verdien til venstre
-        right_effective = np.where(obstacle_right_mask, neighbor_left, neighbor_right)
-        down_effective = np.where(obstacle_down_mask, neighbor_up, neighbor_down)
-        up_effective = np.where(obstacle_up_mask, neighbor_down, neighbor_up)
-
-        potential_new = update_coeff * ((right_effective + left_effective) * dy**2 + (up_effective + down_effective) * dx**2)
-        interior_obstacles = obstacle_mask[1:grid_x, 1:grid_y]
-        potential[1:grid_x, 1:grid_y] = np.where(interior_obstacles, 0.0, potential_new)
-        potential[grid_x//2, grid_y//2] = source_strength
-
-        delta = np.abs(potential - potential_old)
-        update = np.max(delta[1:grid_x, 1:grid_y])
-
-        if update < tol:
-            print(f"Converged after {iteration + 1} iterations with max update {update}")
-            return potential_frames, obstacles, frame_index + 1, iteration + 1, update
-        if iteration % 10 == 0:
-            frame_index += 1
-            potential_frames[:,:,frame_index] = potential.copy()
-            if iteration % 1000 == 0:
-                print(f"Iteration {iteration}: max update {update}")
-
+        self.obstacle_mask = np.zeros((self.grid_x+1, self.grid_y+1), dtype=bool)  # obstacle mask for interior obstacles
+        self.obstacles = [Obstacle(0.25*self.grid_x, 0.75*self.grid_x, 0.33*self.grid_y, 0.33*self.grid_y + 4),
+                Obstacle(0.75*self.grid_x, 0.75*self.grid_x + 2, 0.5*self.grid_y, 0.75*self.grid_y),
+                Obstacle(0.5*self.grid_x, 0.75*self.grid_x, 0.25*self.grid_y, 0.25*self.grid_y + 2)]
         
-    print(f"Did not converge after maximum iterations ({max_iter}) with max update {update}")
-    potential_frames = potential_frames[:,:,:frame_index+1]
-    return potential_frames, obstacles, frame_index + 1, max_iter, update
+        self.sources = [Source(0.5*self.grid_x, 0.5*self.grid_y, self.source_strength), 
+                Source(0.15*self.grid_x, 0.25*self.grid_y, 0.5*self.source_strength), 
+                Source(0.8*self.grid_x, 0.25*self.grid_y, 0.5*self.source_strength)]
 
-def draw_frame(screen, potential, obstacles, frame, SCREEN_WIDTH, SCREEN_HEIGHT, normalisation=False, paused=False):
-    if potential is None:
-        return
+    def calculate_potential(self, tol=5e-4, max_iter=20000):
+        # Boundary conditions
+        self.potential[:, 0] = 0.0  # self.potential(x,0) = 0
+        self.potential[:, self.grid_y] = 0.0  # self.potential(x,Ly) = 0
+        self.potential[0, :] = 0.0  # self.potential(0,y) = 0
+        self.potential[self.grid_x, :] = 0.0  # self.potential(Lx,y) = 0
+        
+        for obstacle in self.obstacles:
+            self.obstacle_mask[obstacle.slice_x, obstacle.slice_y] = True
+    
+        denom = 2.0 / self.dx**2 + 2.0 / self.dy**2  # factor for self.dx != self.dy
 
-    if potential.ndim == 2:
-        potential_frame = potential
+        # Propagation/Calculation
+        frame_index = 0
+        self.potential_frames = np.zeros((self.potential.shape[0], self.potential.shape[1], max_iter // 10))
+        self.potential_frames[:,:,frame_index] = self.potential.copy()
+        for iteration in range(max_iter):
+            self.potential_old = self.potential.copy()
+            update = 0.0
+
+            neighbor_left = self.potential_old[0:self.grid_x-1, 1:self.grid_y]
+            neighbor_right = self.potential_old[2:self.grid_x+1, 1:self.grid_y]
+            neighbor_down = self.potential_old[1:self.grid_x, 0:self.grid_y-1]
+            neighbor_up = self.potential_old[1:self.grid_x, 2:self.grid_y+1]
+
+            obstacle_left_mask = self.obstacle_mask[0:self.grid_x-1, 1:self.grid_y]
+            obstacle_right_mask = self.obstacle_mask[2:self.grid_x+1, 1:self.grid_y]
+            obstacle_down_mask = self.obstacle_mask[1:self.grid_x, 0:self.grid_y-1]
+            obstacle_up_mask = self.obstacle_mask[1:self.grid_x, 2:self.grid_y+1]
+
+            left_effective = np.where(obstacle_left_mask, neighbor_right, neighbor_left) # Alle steder hvor vi har en vegg til venstre, bruker vi verdien til høyre for veggen, eller bruker vi verdien til venstre
+            right_effective = np.where(obstacle_right_mask, neighbor_left, neighbor_right)
+            down_effective = np.where(obstacle_down_mask, neighbor_up, neighbor_down)
+            up_effective = np.where(obstacle_up_mask, neighbor_down, neighbor_up)
+
+            self.potential_new = (1.0 / denom) * ((right_effective + left_effective) / self.dx**2 + (up_effective + down_effective) / self.dy**2)
+            interior_obstacles = self.obstacle_mask[1:self.grid_x, 1:self.grid_y]
+            self.potential[1:self.grid_x, 1:self.grid_y] = np.where(interior_obstacles, 0.0, self.potential_new)
+            for source in self.sources:
+                self.potential[source.x, source.y] = source.strength
+
+            delta = np.abs(self.potential - self.potential_old)
+            update = np.max(delta[1:self.grid_x, 1:self.grid_y])
+
+            if update < tol:
+                print(f"Converged after {iteration + 1} iterations with max update {update}")
+                self.potential = self.potential_frames
+                return self.potential_frames, frame_index + 1, iteration + 1, update
+            if iteration % 10 == 0:
+                frame_index += 1
+                self.potential_frames[:,:,frame_index] = self.potential.copy()
+                if iteration % 1000 == 0:
+                    print(f"Iteration {iteration}: max update {update}")
+
+            
+        print(f"Did not converge after maximum iterations ({max_iter}) with max update {update}")
+        self.potential_frames = self.potential_frames[:,:,:frame_index+1]
+        self.potential = self.potential_frames
+        return self.potential_frames, frame_index + 1, max_iter, update
+
+    def draw_frame(self, screen, frame, SCREEN_WIDTH, SCREEN_HEIGHT, paused=False):
+        if self.potential is None:
+            return 0.0
+
+        if self.potential.ndim == 2:
+            self.potential_frame = self.potential
+        elif self.potential.ndim == 3:
+            frame_index = frame % self.potential.shape[2]
+            self.potential_frame = self.potential[:, :, frame_index]
+        else:
+            self.potential_frame = self.potential
+
+        if np.all(self.potential_frame == 0):
+            return 0.0
+
+
+        self.potential_frame = np.flipud(np.where(self.potential_frame < 0.1, 0, self.potential_frame))
+
+        covered = self.potential_frame > 0
+        total_cells = covered.size
+        covered_cells = np.sum(covered)
+
+        percentage = 100 * covered_cells / total_cells
+        
+        self.potential_max = float(np.max(self.potential_frame))
+        color_map_values = (255 * self.potential_frame / self.potential_max).astype(np.uint8)
+        
+        rgb = convert_to_rgb(color_map_values, color_map="rainbow")
+        
+        surface = pygame.surfarray.make_surface(rgb)
+
+        target_rect = screen.get_rect().copy()
+        target_rect.height = max(1, target_rect.height - MENU_HEIGHT_MULTI * SCREEN_HEIGHT)
+        surface = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
+    
+        screen.blit(surface, target_rect)
+
+        for source in self.sources:
+            source_x = int((self.grid_x - source.x + 0.5) * target_rect.width / (self.grid_x + 1)) + target_rect.x
+            source_y = int((source.y + 0.5) * target_rect.height / (self.grid_y + 1)) + target_rect.y
+            pygame.draw.circle(screen, GREEN, (source_x, source_y), 5)
+            # Draw coordinates for sources
+            font = pygame.font.SysFont(None, 24)
+            text_surf = font.render(f"({source.x}, {source.y})", True, DARK_GREEN)
+            screen.blit(text_surf, (source_x + 10, source_y + 10))
+
+        if paused:
+            font = pygame.font.SysFont(None, 48)
+            text_surf = font.render("Paused", True, RED)
+            text_rect = text_surf.get_rect(center=screen.get_rect().center)
+            screen.blit(text_surf, text_rect)
+
+        return percentage
+
+def convert_to_rgb(values, color_map="rainbow"):
+    if color_map == "rainbow":
+        cmap = plt.get_cmap("rainbow")
+    elif color_map == "hot":
+        cmap = plt.get_cmap("hot")
     else:
-        frame_index = frame % potential.shape[2]
-        potential_frame = potential[:, :, frame_index]
+        cmap = plt.get_cmap("viridis")
 
-    if np.all(potential_frame == 0):
-        return
-
-
-    potential_frame = np.flipud(np.where(potential_frame < 0.1, 0, potential_frame))
-
-    covered = potential_frame > 0
-    total_cells = covered.size
-    covered_cells = np.sum(covered)
-
-    percentage = 100 * covered_cells / total_cells
-    
-    vmin = float(np.min(potential_frame))
-    vmax = float(np.max(potential_frame))
-    
-    # For normalization
-    if vmax != 0:
-        color_map_values = (255 * potential_frame / vmax).astype(np.uint8)
-    else:
-        color_map_values = np.zeros_like(potential_frame, dtype=np.uint8)
-    
-    rgb = np.stack([color_map_values, color_map_values, color_map_values], axis=2)
-    rgb = np.ascontiguousarray(rgb)
-    
-    surface = pygame.surfarray.make_surface(rgb)
-
-    target_rect = screen.get_rect().copy()
-    target_rect.height = max(1, target_rect.height - MENU_HEIGHT_MULTI * SCREEN_HEIGHT)
-    surface = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
-  
-    screen.blit(surface, target_rect)
-
-    if paused:
-        font = pygame.font.SysFont(None, 48)
-        text_surf = font.render("Paused", True, RED)
-        text_rect = text_surf.get_rect(center=screen.get_rect().center)
-        screen.blit(text_surf, text_rect)
-
-    return percentage
-    # # Draw grid lines
-    # grid_x, grid_y = potential_frame.shape
-    # for i in range(1, grid_x):
-    #     x = i * target_rect.width // grid_x
-    #     pygame.draw.line(screen, DARK_GREY, (x, target_rect.top), (x, target_rect.bottom))
-    # for j in range(1, grid_y):
-    #     y = j * target_rect.height // grid_y
-    #     pygame.draw.line(screen, DARK_GREY, (target_rect.left, y), (target_rect.right, y))
-
-    # cell_width = target_rect.width / grid_x
-    # cell_height = target_rect.height / grid_y
-    # for obstacle in obstacles:
-    #     obstacle_rect = pygame.Rect(
-    #         target_rect.left + obstacle.x_start * cell_width,
-    #         target_rect.top + obstacle.y_start * cell_height,
-    #         (obstacle.x_end - obstacle.x_start) * cell_width,
-    #         (obstacle.y_end - obstacle.y_start) * cell_height
-    #     )
-    #     pygame.draw.rect(screen, RED, obstacle_rect)
-
+    normalised_values = values / 255.0
+    rgba_colors = cmap(normalised_values)
+    rgb_colors = (rgba_colors[:, :, :3] * 255).astype(np.uint8)
+    zero_mask = values == 0
+    rgb_colors = np.where(zero_mask[..., None], 0, rgb_colors)
+    return rgb_colors
