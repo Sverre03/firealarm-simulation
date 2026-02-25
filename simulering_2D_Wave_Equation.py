@@ -211,8 +211,8 @@ def solve_system(x, y, threshold=60):
     #denne ruta er AI
 
     # Step 1: Get free and fixed node indices
-    free_nodes  = ordering[ordering[:,2] == 1, 0].astype(int)
-    fixed_nodes = ordering[ordering[:,2] == 0, 0].astype(int)
+    free_nodes  = coordinats[coordinats[:,3] == 1, 0].astype(int) # Bytta free_nodes  = ordering[ordering[:,2] == 1, 0].astype(int) til free_nodes  = coordinates[coordinates[:,3] == 1, 0].astype(int) 
+    fixed_nodes = coordinats[coordinats[:,3] == 0, 0].astype(int) # Bytta fixed_nodes = ordering[ordering[:,2] == 0, 0].astype(int) til fixed_nodes  = coordinates[coordinates[:,3] == 0, 0].astype(int) 
 
     # Step 2: New ordering: free nodes first, then fixed nodes
     new_order = np.hstack([free_nodes, fixed_nodes])
