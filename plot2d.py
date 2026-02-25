@@ -31,8 +31,13 @@ Y_grid = domain2d[:,1].reshape(ycount, xcount)
 mu, sigma = last_gpr.predict(domain2d, return_std=True)
 Z = mu.reshape(ycount, xcount)
 
-plt.contourf(X_grid, Y_grid, Z,)
-plt.scatter(x[:,0], x[:,1], c='red', label='Samples')
+fig1, ax1 = plt.subplots()
+ax1.contourf(X_grid, Y_grid, Z)
+age = np.arange(len(x))
+scatter = ax1.scatter(x[:,0], x[:,1], c=age, cmap='Reds', label='Samples')
+cbar = plt.colorbar(scatter, ax=ax1)
+cbar.set_label('Age (Iteration)')
+ax1.legend()
 plt.show()
 
 fig, ax = plt.subplots(figsize=(10, 7))
@@ -60,8 +65,8 @@ def update(frame):
     acq_full = history['acq_values'][frame]
     acq_rect = acq_full.reshape(ycount, xcount)
     
-    cont = ax.contourf(X_grid, Y_grid, acq_rect, levels=50, cmap='magma', vmin=global_min, vmax=global_max)
-    
+    cont = ax.contourf(X_grid, Y_grid, acq_rect, levels=50, cmap='magma')
+
     current_samples = x[:frame+1]
     ax.scatter(current_samples[:, 0], current_samples[:, 1], 
                c='white', edgecolors='black', s=30, label='Past Samples')

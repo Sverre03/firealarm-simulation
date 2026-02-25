@@ -7,24 +7,18 @@ import copy
 import pickle
 import simulering_2D_Wave_Equation
 
+
 #tar ikke høyde for symmetrien i at opt(x1,x2,x3) = opt(x2,x3,x1) osv
 def loop(x_init, sim_func, acq_func, domain, tol=1e-3, debug=False, save_interval=1): 
     X_samples = np.atleast_2d(x_init)
-    Y_samples = np.array([[sim_func(x_init[0], x_init[1])]])
+    Y_samples = np.array([sim_func(x) for x in x_init])
 
     history = {'gpr':[],
                'acq_values': [],
                'x_next': [],
                'save_interval': save_interval}
 
-    kernel = Matern(
-        length_scale=10.0, 
-        length_scale_bounds=(1e-1, 100.0),
-        nu = 2.5)
-
-    gpr = GaussianProcessRegressor(
-        kernel=kernel, 
-        normalize_y=True) #usikker på valg av kjerne
+    gpr = GaussianProcessRegressor(kernel=Matern(nu=2.5), normalize_y=True) #usikker på valg av kjerne
 
     acq_max = np.inf
     iteration = 0 #er nok feil i indekseringen
@@ -39,16 +33,10 @@ def loop(x_init, sim_func, acq_func, domain, tol=1e-3, debug=False, save_interva
         if iteration % save_interval == 0:
             history['acq_values'].append(current_acq)
 
-        if debug:
-            print(f'current_acq: {current_acq}')
         idx_next = np.argmax(current_acq) #where acquisition function is largest
-        if debug:
-            print(f'idx_next: {idx_next}')
         x_next = domain[idx_next] 
         acq_max = current_acq[idx_next]
-        if debug:
-            print(f'acq_max: {acq_max}')
-        score_next = sim_func(x_next[0], x_next[1])
+        score_next = sim_func(x_next)
         if iteration % save_interval == 0:
             history['x_next'].append(x_next)
 
@@ -56,34 +44,43 @@ def loop(x_init, sim_func, acq_func, domain, tol=1e-3, debug=False, save_interva
         Y_samples = np.append(Y_samples, score_next)
         
         if debug:
-            print(f'x_next: {x_next}\nscore_next:{score_next}')
+            print(f'Next point: {x_next}, Function value:{round(score_next,3)}, Acquisition max: {acq_max}')
     #should apply symmetry of fire alarms: (x1,x2,x3) == (x2,x1,x3) osv.
     return X_samples, Y_samples, history
 
-def expected_improvement(mu_x, sigma_x, f_xplus, xi=1e-2): #add another acquisition function?
+def expected_improvement(mu_x, sigma_x, f_xplus, xi=1e-3): #add another acquisition function?
     Z = (mu_x - f_xplus - xi)/sigma_x
     EI = (mu_x - f_xplus - xi)*scipy.stats.norm.cdf(Z) + sigma_x*scipy.stats.norm.pdf(Z)
     return EI
 
-X, Y = np.meshgrid(np.arange(0,100),np.arange(0,100))
-domain2d = np.vstack([X.ravel(), Y.ravel()]).T
+def sim_test3d(x):
+    x1, x2, x3 = x[0], x[1], x[2]
+    
+    term1 = 100 * (x2 - x1**2)**2 + (1 - x1)**2
+    term2 = 100 * (x3 - x2**2)**2 + (1 - x2)**2
+    
+    return -(term1 + term2)
 
-res_x2d, res_y2d, res_history2d = loop(np.array([0, 0]), 
-                                       simulering_2D_Wave_Equation.solve_system, 
-                                       expected_improvement, 
-                                       domain2d, 
-                                       tol=1e-3, 
-                                       debug=True, 
-                                       save_interval=1)
+X, Y, Z = np.meshgrid(np.arange(0,2,1e-2),np.arange(0,2,1e-2),np.arange(0,2,1e-2))
+domain3d = np.vstack([X.ravel(), Y.ravel(), Z.ravel()]).T
+
+res_x3d, res_y3d, res_history3d = loop(
+    [[0.5, 0.5, 0.5]], 
+    sim_test3d, 
+    expected_improvement, 
+    domain3d, 
+    tol=.3, 
+    debug=True, 
+    save_interval=1)
 
 data_to_save = {
-    'x': res_x2d,
-    'y': res_y2d,
-    'history': res_history2d,
-    'domain': domain2d
+    'x': res_x3d,
+    'y': res_y3d, #response
+    'history': res_history3d,
+    'domain': domain3d
 }
 
-with open('bo_results.pkl', 'wb') as f:
+with open('bo_results3d.pkl', 'wb') as f:
     pickle.dump(data_to_save, f)
 
-print("Results saved to bo_results.pkl")
+print("Results saved to bo_results3d.pkl")
