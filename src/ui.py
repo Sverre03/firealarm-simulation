@@ -16,11 +16,13 @@ class Menu:
         self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D floor', '2D floor', False, 1)
         self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Pause', 'Pause', GREEN, RED, False)
         self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
-        self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
+        self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:', 0, 0, ALARM_MAX)
         self.animation_speed = InputBox(0, 0, 140, 30, 'Speed:')
         self.animation_speed.number_value = 1
 
-        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:')
+        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:', 0, 0, ALARM_MAX)
+        self.room_choice = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height//2, 150, self.menu_height//2, 'Room number:', 1, 1, ROOM_NR_MAX)
+        self.calculate_button = Switch(SCREEN_WIDTH//2 + 240, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Calculating...', 'Calculate', RED, GREEN, False)
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
         self.max_coverage_percentage_room = NumberDisplay(0, 30, 140, 30, 'Max coverage:')
         self.potential_max = NumberDisplay(0, 60, 140, 30, 'Potential max:')
@@ -63,26 +65,34 @@ class Menu:
         # Draw input boxes if toggles are active
         if self.room_toggle.state and self.room_toggle.value == 0:
             self.alarm_amount_room.draw(screen)
+            self.room_choice.draw(screen)
+            self.calculate_button.draw(screen)
             self.coverage_percentage_room.draw(screen, "%")
             self.max_coverage_percentage_room.draw(screen, "%")
             self.potential_max.draw(screen)
-            self.add_obstacle.draw(screen)
+            # self.add_obstacle.draw(screen)
+
         if self.floor_toggle.state and self.floor_toggle.value == 0:
             self.alarm_amount_floor.draw(screen)
+
     def update(self, dt, value):
         self.quit_button.update(dt)
         self.pause_button.update(dt)
         self.room_toggle.update(dt)
+        if not self.calculate_button.state:
+            self.calculate_button.update(dt)
         if self.room_toggle.state and self.room_toggle.value ==0:
             self.floor_toggle.value = 1
             self.wave_sim.value = 1
             self.coverage_percentage_room.update(value[0])
             self.max_coverage_percentage_room.update(value[1])
             self.potential_max.update(value[2])
+
         self.floor_toggle.update(dt)
         if self.floor_toggle.state and self.floor_toggle.value ==0:
             self.room_toggle.value = 1
             self.wave_sim.value = 1
+
         self.wave_sim.update(dt)
         if self.wave_sim.state and self.wave_sim.value ==0:
             self.room_toggle.value = 1
@@ -91,9 +101,10 @@ class Menu:
     # Handle events for input boxes
     def handle_event(self, event):
         self.animation_speed.handle_event(event)
-        if self.room_toggle.state and self.room_toggle.value ==0:
+        if self.room_toggle.state and self.room_toggle.value ==0 and not self.calculate_button.state:
             self.alarm_amount_room.handle_event(event)
             self.add_obstacle.handle_event(event)
+            self.room_choice.handle_event(event)
 
         if self.floor_toggle.state and self.floor_toggle.value ==0:
             self.alarm_amount_floor.handle_event(event)

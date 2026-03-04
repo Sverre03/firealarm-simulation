@@ -23,6 +23,7 @@ def main():
     coverage_percentage = 0.0
     max_coverage_percentage = 0.0
     number_values = [0.0, 0.0, 0.0]  # List to hold values for updating the UI
+    calculating = False
 
     potential_1D_wave, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)
     room2D = Room()
@@ -57,8 +58,9 @@ def main():
         ui.update(dt, number_values[0:])
         
         if ui.quit_button.state:
-            running = False            
-        
+            running = False   
+                
+
         # Draw
         screen.fill(GREY)
 
@@ -68,6 +70,14 @@ def main():
                 wave_frame = (wave_frame + speed) % number_of_timesteps
             FEM_draw(screen, int(wave_frame), potential_1D_wave, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, number_of_timesteps, paused=ui.pause_button.state)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
+            if not calculating and not ui.calculate_button.state: 
+                calculating = True
+                ui.calculate_button.state = True
+                alarm_amount = ui.alarm_amount_room.number_value
+                room_choice = ui.room_choice.number_value
+                # Calculate TBD
+                calculating = False
+                ui.calculate_button.state = False
             if not ui.pause_button.state:
                 room_frame = (room_frame + dt * FPS * speed) % number_of_frames
             coverage_percentage = room2D.draw_frame(screen, int(room_frame), SCREEN_WIDTH, SCREEN_HEIGHT, paused=ui.pause_button.state)  

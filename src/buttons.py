@@ -74,7 +74,7 @@ class Toggle:
 
 # Input box for numerical values
 class InputBox:
-    def __init__(self, x, y, width, height, label=''):
+    def __init__(self, x, y, width, height, label='', initial_value=0, min_value=0, max_value=10):
         self.rect = pygame.Rect(x + width, y, width*0.5, height)
         self.rect_label = pygame.Rect(x, y, width, height)
         self.color = WHITE
@@ -82,8 +82,10 @@ class InputBox:
         self.label = label
         self.font = pygame.font.SysFont(None, 24)
         self.active = False
-        self.number_value = 2
+        self.number_value = initial_value
         self.number_value_past = self.number_value
+        self.min_value = min_value
+        self.max_value = max_value
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
@@ -123,7 +125,7 @@ class InputBox:
                 if event.unicode.isdigit():
                     new_text = self.text + event.unicode
                 
-                    if int(new_text) <= ALARM_MAX: 
+                    if int(new_text) <= self.max_value and int(new_text) >= self.min_value: 
                         self.text = new_text
 
 # Used for adding parameters for obstacles (x, y, width, height), separated by space, comma or semicolon
