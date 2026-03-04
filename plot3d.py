@@ -89,6 +89,9 @@ def plot_4d_scatter_fast(gpr, domain3d, samples_x, resolution=30):
 
     ax.scatter(samples_x[:, 0], samples_x[:, 1], samples_x[:, 2], 
                c='cyan', s=80, edgecolors='black', label='Samples', depthshade=False)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
 
     fig.colorbar(img, ax=ax, label='Value')
     ax.set_title(f"3D Performance View ({len(X.ravel()[mask])} points shown)")
