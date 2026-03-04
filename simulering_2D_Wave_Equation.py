@@ -211,6 +211,7 @@ A = Global_K - k ** 2 * Global_M
 Force_vector = np.zeros(np.shape(A)[0])  # empty for now
 
 def solve_system(x, y, threshold=60, grid = np.zeros((N_x, M_x))):
+    global grid_priv
     grid_priv = grid;
     idx = y * M_x + x
     Force_vector[idx] = 100
