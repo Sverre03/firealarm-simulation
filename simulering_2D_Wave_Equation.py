@@ -3,6 +3,12 @@ import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
+# Grid size
+N_x = 100
+M_x = 100
+
+grid_priv = np.zeros((N_x, N_x))
+
 def N(xi, n):
     return (1 / 4 * np.array([1 - n - xi + n * xi,
                               1 - n + xi - n * xi,
@@ -88,6 +94,8 @@ for i in range(np.shape(element_conectivity_table)[0]):
 
 print(element_conectivity_table)
 
+# creates a total of [0000] with a total of 100 * 100 values.
+
 coordinates = np.zeros(((N_x + 1) * (M_x + 1), 4))
 coordinates[:,3] = 1
 coordinates[:,0] = np.arange(0, (N_x + 1) * (M_x + 1), 1)
@@ -102,18 +110,30 @@ coordinates_dummy = coordinates.copy()
 # reordering coordinats
 
 # Fixed nodes given dette må fikses på bedre måte 1 fixed 0 free
-
-coordinates[:, 3][0:(M_x + 1)] = np.zeros(N_x + 1)
+coordinates[:, 3][0:(M_x + 1)] = np.zeros(N_x + 1) # TODO: kanskje det bør være M_x og ikke M_x
 coordinates[:, 3][(N_x + 1) * (M_x + 1) - (M_x + 1):] = np.zeros(N_x + 1)
+
+
+for i in range(grid_priv.shape[0]):
+    for j in range(grid_priv.shape[1]):
+        node_id = i * (N_x + 1) + j # find the node
+        print(i, j, node_id)
+        coordinates[node_id, 3] = grid_priv[i][j]
+
 
 for i in range(np.size(coordinates[:, 3])):
     #### AI
     row = i // (M_x + 1)
     col = i % (M_x + 1)
+
+    # lager bare en vegg.
+    """
+
     if row == 0 or row == N_x or col == 0 or col == M_x:  # Boundary nodes
         coordinates[i, 3] = 0  # Fixed
     else:
         coordinates[i, 3] = 1  # Free
+    """
     ####
 
 print(coordinates[:, 3], coordinates[:, 0])
@@ -190,7 +210,8 @@ k = 0.1
 A = Global_K - k ** 2 * Global_M
 Force_vector = np.zeros(np.shape(A)[0])  # empty for now
 
-def solve_system(x, y, threshold=60):
+def solve_system(x, y, threshold=60, grid = np.zeros((N_x, M_x))):
+    grid_priv = grid;
     idx = y * M_x + x
     Force_vector[idx] = 100
     Force_vector_dummy = Force_vector.copy()
