@@ -17,6 +17,11 @@ class Switch:
         self.switch_delay = 0.5 # seconds
         self.last_switch_time = 0
 
+    def set_state(self, state):
+        self.state = bool(state)
+        self.color = self.active_color if self.state else self.inactive_color
+        self.text = self.text_active if self.state else self.text_inactive
+
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
         if self.text:
