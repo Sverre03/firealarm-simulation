@@ -21,9 +21,8 @@ def main():
     running = True
     wave_frame = 0.0
     coverage_percentage = 0.0
-    max_coverage_percentage = 0.0
     potential_max = 0.0
-    number_values = [0.0, 0.0, 0.0]  # List to hold values for updating the UI
+    number_values = [0.0, 0.0]  # List to hold values for updating the UI
     calculating = False
     previous_calculate_state = ui.calculate_button.state
     room_result = None # Returned by the optimization function,
@@ -54,14 +53,12 @@ def main():
         
         # Update
         number_values[0] = coverage_percentage
-        number_values[1] = max_coverage_percentage
-        number_values[2] = potential_max
+        number_values[1] = potential_max
         ui.update(dt, number_values[0:])
         
         if ui.quit_button.state:
             running = False   
                 
-
         # Draw
         screen.fill(GREY)
 
@@ -72,25 +69,33 @@ def main():
             FEM_draw(screen, int(wave_frame), potential_1D_wave, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, number_of_timesteps, paused=ui.pause_button.state)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
             calculation_requested = ui.calculate_button.state and not previous_calculate_state
+            previous_calculate_state = ui.calculate_button.state
+
+            if ui.room_choice.number_value != ui.room_choice.number_value_past:
+                # Reset everything
+                room_result = None
+                coverage_percentage = 0.0
+                potential_max = 0.0
+                ui.room_choice.number_value_past = ui.room_choice.number_value
+
             if not calculating and calculation_requested:
                 calculating = True
                 alarm_count = ui.alarm_amount_room.number_value
                 room_choice = ui.room_choice.number_value if ui.room_choice.number_value in rooms else 1
                 obstacle_mask = rooms[room_choice]
 
-                # Optimization
+                # Optimization sketch:
                 # room_result = optimize_alarms(obstacle_mask/domain, alarm_count, coverage)
+                # coverage_percentage = room_result.coverage_percent
+                # potential_max = room_result.potential
 
                 calculating = False
                 ui.calculate_button.set_state(False)
 
             if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
                 room_result = None
-                max_coverage_percentage = coverage_percentage
+                coverage_percentage = 0.0
                 ui.alarm_amount_room.number_value_past = ui.alarm_amount_room.number_value
-            else:
-                # Track max coverage, probably not that useful anymore
-                max_coverage_percentage = max(max_coverage_percentage, coverage_percentage)
 
             room_choice = ui.room_choice.number_value if ui.room_choice.number_value in rooms else 1
 

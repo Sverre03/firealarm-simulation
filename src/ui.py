@@ -24,7 +24,6 @@ class Menu:
         self.room_choice = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height//2, 150, self.menu_height//2, 'Room number:', 1, 1, ROOM_NR_MAX)
         self.calculate_button = Switch(SCREEN_WIDTH//2 + 240, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Calculating...', 'Calculate', RED, GREEN, False)
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
-        self.max_coverage_percentage_room = NumberDisplay(0, 30, 140, 30, 'Max coverage:')
         self.potential_max = NumberDisplay(0, 60, 140, 30, 'Potential max:')
 
         self.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -67,7 +66,6 @@ class Menu:
             self.room_choice.draw(screen)
             self.calculate_button.draw(screen)
             self.coverage_percentage_room.draw(screen, "%")
-            self.max_coverage_percentage_room.draw(screen, "%")
             self.potential_max.draw(screen)
 
         if self.floor_toggle.state and self.floor_toggle.value == 0:
@@ -83,8 +81,7 @@ class Menu:
             self.floor_toggle.value = 1
             self.wave_sim.value = 1
             self.coverage_percentage_room.update(value[0])
-            self.max_coverage_percentage_room.update(value[1])
-            self.potential_max.update(value[2])
+            self.potential_max.update(value[1])
 
         self.floor_toggle.update(dt)
         if self.floor_toggle.state and self.floor_toggle.value ==0:
