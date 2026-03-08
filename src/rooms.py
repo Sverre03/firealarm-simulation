@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pygame
-from config import BLACK, GREEN, RED, DARK_GREY_BLUE, MENU_HEIGHT_MULTI
+from config import BLACK, GREEN, RED, DARK_GREY_BLUE, MENU_HEIGHT_MULTI, SOUND_THRESHOLD
 
 class Obstacle:
     def __init__(self, x_start, x_end, y_start, y_end):
@@ -74,7 +74,7 @@ rooms = {
     3: get_room_mask(3, 200, 150), # Square room without a door in the middle of the larger room
 }
 
-def create_room_heatmap(obstacle_mask, potential=None, threshold=100.0):
+def create_room_heatmap(obstacle_mask, potential=None):
     x_dim, y_dim = obstacle_mask.shape
     heatmap = np.full((x_dim, y_dim, 3), 20, dtype=np.uint8)
 
@@ -88,7 +88,7 @@ def create_room_heatmap(obstacle_mask, potential=None, threshold=100.0):
             heat = np.zeros_like(heatmap)
             heat = plt.cm.viridis(normalized_potential)[:, :, :3] * 255
 
-            covered = (potential >= threshold) & free_mask # Above threshold
+            covered = (potential >= SOUND_THRESHOLD) & free_mask # Above threshold
             below_threshold = (~covered) & free_mask
 
             heatmap[covered] = heat[covered]
@@ -97,7 +97,7 @@ def create_room_heatmap(obstacle_mask, potential=None, threshold=100.0):
     heatmap[obstacle_mask] = np.array(RED, dtype=np.uint8)
     return heatmap
 
-def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=None, threshold=100.0):
+def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=None):
 
     menu_offset = int(MENU_HEIGHT_MULTI * screen.get_height())
     target_rect = pygame.Rect(0, menu_offset, screen.get_width(), screen.get_height() - menu_offset)
@@ -113,7 +113,7 @@ def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=No
                 pygame.draw.circle(screen, RED, (int(ax * scale), int(ay * scale)), max(3, scale // 2))
         return
 
-    heatmap = create_room_heatmap(obstacle_mask, potential=potential, threshold=threshold)
+    heatmap = create_room_heatmap(obstacle_mask, potential=potential)
     surface = pygame.surfarray.make_surface(heatmap)
     scaled = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
     screen.blit(scaled, target_rect)
