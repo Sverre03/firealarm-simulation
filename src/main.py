@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from buttons import *
 from config import *
 from ui import *
@@ -28,6 +29,8 @@ def main():
     previous_calculate_state = ui.calculate_button.state
     room_result = None # Returned by the optimization function,
     # Should contain the potential, alarm positions, coverage and maybe other stuff that has been calculated
+    optimization_pool = ThreadPoolExecutor(max_workers=1)
+    optimization_task = None
 
     potential_1D_wave, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)    
     number_of_timesteps=potential_1D_wave.shape[1]
@@ -73,11 +76,20 @@ def main():
             previous_calculate_state = ui.calculate_button.state
 
             if ui.room_choice.number_value != ui.room_choice.number_value_past:
-                # Reset everything
+                # Reset results when room changes.
                 room_result = None
                 coverage_percentage = 0.0
                 potential_max = 0.0
                 ui.room_choice.number_value_past = ui.room_choice.number_value
+
+            if calculating and optimization_task is not None and optimization_task.done():
+                room_result = optimization_task.result()
+                coverage_percentage = room_result.coverage_percentage
+                potential_max = room_result.potential_max
+                
+                calculating = False
+                ui.calculate_button.set_state(False)
+                optimization_task = None
 
             if not calculating and calculation_requested:
                 calculating = True
@@ -86,16 +98,13 @@ def main():
                 obstacle_mask = rooms[room_choice]
 
                 # Optimization sketch:
-                room_result = optimize_alarms(obstacle_mask, alarm_count)
-                coverage_percentage = room_result.coverage_percentage
-                potential_max = room_result.potential_max
-
-                calculating = False
-                ui.calculate_button.set_state(False)
+                optimization_task = optimization_pool.submit(optimize_alarms, obstacle_mask, alarm_count)
 
             if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
+                # Reset results when alarm count changes.
                 room_result = None
                 coverage_percentage = 0.0
+                potential_max = 0.0
                 ui.alarm_amount_room.number_value_past = ui.alarm_amount_room.number_value
 
             room_choice = ui.room_choice.number_value if ui.room_choice.number_value in rooms else 1
@@ -111,6 +120,8 @@ def main():
         ui.draw(screen)
 
         pygame.display.flip()
+
+    optimization_pool.shutdown(wait=False)
 
     pygame.quit()
 

@@ -19,11 +19,11 @@ def FDM_solve(obstacle_mask, alarm_positions):
     wave_speed = WAVE_SPEED
     dt = WAVE_DT
     dx = WAVE_DX
-    damping = WAVE_DAMPING
+    gamma = WAVE_DAMPING
     frequency = WAVE_FREQUENCY
 
     # Finite difference method:
-    # u_tt + damping * u_t = c^2 * Laplacian(u) + f(x, y, t)
+    # u_tt + gamma * u_t = c^2 * Laplacian(u) + f(x, y, t)
 
     x_dim, y_dim = obstacle_mask.shape
     free_mask = ~obstacle_mask
@@ -36,7 +36,7 @@ def FDM_solve(obstacle_mask, alarm_positions):
         if 1 <= x < x_dim - 1 and 1 <= y < y_dim - 1 and not obstacle_mask[x, y]:
             valid_sources.append((x, y))
 
-    Cx = wave_speed * dt / dx
+    Cx = wave_speed * dt / dx # Courant number
     Cx2 = Cx**2 # Stability condition for explicit scheme, must be <= 0.5
     if Cx2 > 0.5:
         print(f"Ustabilt valg av parametere, Cx^2 = {Cx2:.3f} > 0.5.")
@@ -45,8 +45,8 @@ def FDM_solve(obstacle_mask, alarm_positions):
     rms_count = 0
     omega = 2.0 * np.pi * frequency
 
-    D2 = max(0.0, 1.0 - damping * dt)
-    D1 = max(0.0, 2.0 - damping * dt)
+    D2 = 1.0 - gamma * dt 
+    D1 = 2.0 - gamma * dt
 
     for step in range(n_steps):
         left = u_current[:-2, 1:-1]
@@ -70,15 +70,15 @@ def FDM_solve(obstacle_mask, alarm_positions):
 
         u_next = np.zeros_like(u_current)
         # Oppdater med FDM, delvis inspirert av hplgit.github.io/fdm-book/doc/pub/book/sphinx/._book008.html
-        # u[i,j][n+1] = (2 - damping * dt) * u[i,j][n] - (1 - damping * dt) * u[i,j][n-1] + Cx^2 * Laplacian(u[i,j][n])
-        u_next[1:-1, 1:-1] = (D1*u_current[1:-1, 1:-1] # + (2 - damping * dt) * u[i,j][n]
-                              - D2*u_prev[1:-1, 1:-1] # + (1 - damping * dt) * u[i,j][n-1]
+        # u[i,j][n+1] = (2 - gamma * dt) * u[i,j][n] - (1 - gamma * dt) * u[i,j][n-1] + Cx^2 * Laplacian(u[i,j][n])
+        u_next[1:-1, 1:-1] = (D1*u_current[1:-1, 1:-1] # + (2 - gamma * dt) * u[i,j][n]
+                              - D2*u_prev[1:-1, 1:-1] # + (1 - gamma * dt) * u[i,j][n-1]
                               + Cx2 * u_xx) # Cx^2 * Laplacian(u[i,j][n])
 
         # Simulerer en sinusformet kilde ved hver alarmplassering
         strength = source_strength * np.sin(omega * step * dt)
         for x, y in valid_sources:
-            u_next[x, y] += (dt * dt) * strength 
+            u_next[x, y] += (dt * dt) * strength # dt^2 * f(x, y, t)
 
         u_next[obstacle_mask] = 0.0
 
