@@ -24,7 +24,7 @@ class Menu:
         self.room_choice = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height//2, 150, self.menu_height//2, 'Room number:', 1, 1, ROOM_NR_MAX)
         self.calculate_button = Switch(SCREEN_WIDTH//2 + 240, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Calculating...', 'Calculate', RED, GREEN, False)
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
-        self.potential_max = NumberDisplay(0, 60, 140, 30, 'Potential max:')
+        self.potential_max = NumberDisplay(0, 30, 140, 30, 'Potential max:')
 
         self.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
 

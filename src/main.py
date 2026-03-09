@@ -5,6 +5,7 @@ from config import *
 from ui import *
 from FEM import FEM_draw, FEM_setup
 from rooms import draw_room, rooms
+from room_optimization import optimize_alarms
 
 def main():
     # Initialize Pygame
@@ -85,9 +86,9 @@ def main():
                 obstacle_mask = rooms[room_choice]
 
                 # Optimization sketch:
-                # room_result = optimize_alarms(obstacle_mask/domain, alarm_count, coverage)
-                # coverage_percentage = room_result.coverage_percent
-                # potential_max = room_result.potential
+                room_result = optimize_alarms(obstacle_mask, alarm_count)
+                coverage_percentage = room_result.coverage_percentage
+                potential_max = room_result.potential_max
 
                 calculating = False
                 ui.calculate_button.set_state(False)

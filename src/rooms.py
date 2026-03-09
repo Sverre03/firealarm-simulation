@@ -80,38 +80,26 @@ def create_room_heatmap(obstacle_mask, potential=None):
 
     if potential is not None:
         free_mask = ~obstacle_mask
-        max_potential = float(np.max(potential[free_mask])) if np.any(free_mask) else 0.0
-        if max_potential > 0:
-            normalized_potential = np.clip(potential / max_potential, 0.0, 1.0)
+        if np.any(free_mask):
+            free_values = potential[free_mask]
+            normalized_potential = np.clip((potential - free_values.min()) / (free_values.max() - free_values.min()), 0.0, 1.0)
 
-            # Create heatmap
-            heat = np.zeros_like(heatmap)
-            heat = plt.cm.viridis(normalized_potential)[:, :, :3] * 255
+            heatmap = (plt.cm.viridis(normalized_potential)[:, :, :3] * 255)
 
-            covered = (potential >= SOUND_THRESHOLD) & free_mask # Above threshold
+            covered = (potential >= SOUND_THRESHOLD) & free_mask
             below_threshold = (~covered) & free_mask
-
-            heatmap[covered] = heat[covered]
-            heatmap[below_threshold] = np.array(DARK_GREY_BLUE, dtype=np.uint8)
+            bg = np.array(DARK_GREY_BLUE, dtype=np.float32)
+            heatmap[below_threshold] = (
+                0.45 * heatmap[below_threshold].astype(np.float32) + 0.55 * bg
+            ).astype(np.uint8)
 
     heatmap[obstacle_mask] = np.array(RED, dtype=np.uint8)
     return heatmap
 
 def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=None):
-
     menu_offset = int(MENU_HEIGHT_MULTI * screen.get_height())
     target_rect = pygame.Rect(0, menu_offset, screen.get_width(), screen.get_height() - menu_offset)
     obstacle_mask = rooms[room_number]
-
-    if potential is None:
-        for x in range(obstacle_mask.shape[0]):
-            for y in range(obstacle_mask.shape[1]):
-                if obstacle_mask[x, y]:
-                    pygame.draw.rect(screen, color, (x * scale, y * scale, scale, scale))
-        if alarms:
-            for ax, ay in alarms:
-                pygame.draw.circle(screen, RED, (int(ax * scale), int(ay * scale)), max(3, scale // 2))
-        return
 
     heatmap = create_room_heatmap(obstacle_mask, potential=potential)
     surface = pygame.surfarray.make_surface(heatmap)
