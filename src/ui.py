@@ -12,21 +12,22 @@ class Menu:
         self.font = pygame.font.SysFont(None, 24)
 
         self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-self.menu_height, 100, self.menu_height, 'Quit', 'Quit', GREEN, RED, False)
-        self.room_toggle = Toggle(0, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D room', '2D room', True, 0)
-        self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, '2D floor', '2D floor', False, 1)
-        self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Pause', 'Pause', GREEN, RED, False)
+        self.room_toggle = Toggle(0, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Room heatmap', 'Room heatmap', True, 0)
+        self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Available rooms', 'Available rooms', False, 1)
+        self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Unpause', 'Pause', GREEN, RED, False)
         self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
         self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:', 0, 0, ALARM_MAX)
         self.animation_speed = InputBox(0, 0, 140, 30, 'Speed:')
         self.animation_speed.number_value = 1
 
-        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:', 0, 0, ALARM_MAX)
+        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:', 1, 1, ALARM_MAX)
         self.room_choice = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height//2, 150, self.menu_height//2, 'Room number:', 1, 1, ROOM_NR_MAX)
         self.calculate_button = Switch(SCREEN_WIDTH//2 + 240, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Calculating...', 'Calculate', RED, GREEN, False)
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
         self.potential_max = NumberDisplay(0, 30, 140, 30, 'Potential max:')
 
         self.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
+
 
     def update_layout(self, screen_width, screen_height):
         top_margin = 10
@@ -46,6 +47,7 @@ class Menu:
         pause_x = speed_x - gap - pause_width
         self.pause_button.rect.update(pause_x, speed_y, pause_width, pause_height)
 
+
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
         if self.text:
@@ -57,8 +59,6 @@ class Menu:
         self.room_toggle.draw(screen)
         self.floor_toggle.draw(screen)
         self.wave_sim.draw(screen)
-        self.pause_button.draw(screen)
-        self.animation_speed.draw(screen)
         
         # Draw input boxes if toggles are active
         if self.room_toggle.state and self.room_toggle.value == 0:
@@ -70,6 +70,11 @@ class Menu:
 
         if self.floor_toggle.state and self.floor_toggle.value == 0:
             self.alarm_amount_floor.draw(screen)
+
+        if self.wave_sim.state and self.wave_sim.value == 0:
+            self.pause_button.draw(screen)
+            self.animation_speed.draw(screen)
+
 
     def update(self, dt, value):
         self.quit_button.update(dt)
@@ -92,6 +97,7 @@ class Menu:
         if self.wave_sim.state and self.wave_sim.value ==0:
             self.room_toggle.value = 1
             self.floor_toggle.value = 1
+
 
     # Handle events for input boxes
     def handle_event(self, event):

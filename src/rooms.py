@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pygame
-from config import BLACK, GREEN, RED, DARK_GREY_BLUE, MENU_HEIGHT_MULTI, SOUND_THRESHOLD
+from config import BLACK, DARK_GREY, GREEN, RED, DARK_GREY_BLUE, MENU_HEIGHT_MULTI, SOUND_THRESHOLD
 
 class Obstacle:
     def __init__(self, x_start, x_end, y_start, y_end):
@@ -63,6 +63,23 @@ def get_room_mask(room_id=1, x_dim=200, y_dim=150):
             (80, 20, 1, 60),
             (20, 80, 61, 1),
         ],
+        4: [
+            (50, 34, 1, 34),
+            (50, 34, 15, 1),
+            (65, 0, 1, 35),
+            (113, 0, 1, 68),
+            (142, 0, 1, 68),
+
+            (0, 68, 32, 1),
+            (47, 68, 48, 1),
+            (110, 68, 16, 1),
+            (141, 68, 3, 1),
+            (159, 68, 12, 1),
+
+            (171, 68, 1, 50),
+            (171, 100, 29, 1),
+            (171, 133, 1, 27),
+        ],
     }
     if room_id not in room_layouts:
         raise ValueError(f"Invalid room ID {room_id}")
@@ -72,11 +89,12 @@ rooms = {
     1: get_room_mask(1, 200, 150), # Square room with a door in the middle of the larger room
     2: get_room_mask(2, 200, 150), # Room divided into 3x4 grid of smaller rooms
     3: get_room_mask(3, 200, 150), # Square room without a door in the middle of the larger room
+    4: get_room_mask(4, 200, 150), # More complex room with multiple smaller rooms and doors
 }
 
 def create_room_heatmap(obstacle_mask, potential=None):
     x_dim, y_dim = obstacle_mask.shape
-    heatmap = np.full((x_dim, y_dim, 3), 20, dtype=np.uint8)
+    heatmap = np.full((x_dim, y_dim, 3), 243, dtype=np.uint8)
 
     if potential is not None:
         free_mask = ~obstacle_mask
@@ -93,12 +111,13 @@ def create_room_heatmap(obstacle_mask, potential=None):
                 0.45 * heatmap[below_threshold].astype(np.float32) + 0.55 * bg
             ).astype(np.uint8)
 
-    heatmap[obstacle_mask] = np.array(RED, dtype=np.uint8)
+    heatmap[obstacle_mask] = np.array(DARK_GREY, dtype=np.uint8)
     return heatmap
 
 def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=None):
+    top_margin = int(MENU_HEIGHT_MULTI * screen.get_height())
     menu_offset = int(MENU_HEIGHT_MULTI * screen.get_height())
-    target_rect = pygame.Rect(0, menu_offset, screen.get_width(), screen.get_height() - menu_offset)
+    target_rect = pygame.Rect(screen.get_width()*0.05, top_margin, screen.get_width() - screen.get_width()*0.1, screen.get_height() - menu_offset - top_margin*1.1)
     obstacle_mask = rooms[room_number]
 
     heatmap = create_room_heatmap(obstacle_mask, potential=potential)
