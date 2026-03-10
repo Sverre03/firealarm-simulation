@@ -47,7 +47,7 @@ def main():
     while running:
         dt = clock.tick(FPS) / 1000
         SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
-        ui.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
+        ui.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT+1)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -86,7 +86,7 @@ def main():
                 room_result = optimization_task.result()
                 coverage_percentage = room_result.coverage_percentage
                 potential_max = room_result.potential_max
-                
+
                 calculating = False
                 ui.calculate_button.set_state(False)
                 optimization_task = None

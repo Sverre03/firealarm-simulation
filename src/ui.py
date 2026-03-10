@@ -1,47 +1,77 @@
 
 import pygame
 from config import *
-from buttons import *
+from buttons import *    
 
 class Menu:
-    def __init__(self, x, y, SCREEN_WIDTH, SCREEN_HEIGHT, color, text = 'Menu'):
-        self.menu_height = MENU_HEIGHT_MULTI * SCREEN_HEIGHT
-        self.rect = pygame.Rect(x, y, SCREEN_WIDTH, self.menu_height)
+    def __init__(self, x, y, screen_width, screen_height, color, text='Menu'):
         self.color = color
         self.text = text
         self.font = pygame.font.SysFont(None, 24)
 
-        self.quit_button = Switch(SCREEN_WIDTH - 100, SCREEN_HEIGHT-self.menu_height, 100, self.menu_height, 'Quit', 'Quit', GREEN, RED, False)
-        self.room_toggle = Toggle(0, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Room heatmap', 'Room heatmap', True, 0)
-        self.floor_toggle = Toggle(150, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Available rooms', 'Available rooms', False, 1)
-        self.pause_button = Switch(450, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Unpause', 'Pause', GREEN, RED, False)
-        self.wave_sim = Toggle(300, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Wave sim', 'Wave sim', False, 1)
-        self.alarm_amount_floor = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:', 0, 0, ALARM_MAX)
-        self.animation_speed = InputBox(0, 0, 140, 30, 'Speed:')
+        self.menu_height = MENU_HEIGHT_MULTI * screen_height
+        self.rect = pygame.Rect(0, screen_height - self.menu_height, screen_width, self.menu_height)
+
+        # Create widgets without fixed coordinates
+        self.quit_button = Switch(0, 0, 0, 0, 'Quit', 'Quit', GREEN, RED, False)
+        self.room_toggle = Toggle(0, 0, 0, 0, 'Room heatmap', 'Room heatmap', True, 0)
+        self.floor_toggle = Toggle(0, 0, 0, 0, 'Available rooms', 'Available rooms', False, 1)
+        self.pause_button = Switch(0, 0, 0, 0, 'Unpause', 'Pause', GREEN, RED, False)
+        self.wave_sim = Toggle(0, 0, 0, 0, 'Wave sim', 'Wave sim', False, 1)
+        self.alarm_amount_floor = InputBox(0, 0, 0, 0, 'Alarm amount:', 0, 1, ALARM_MAX)
+        self.animation_speed = InputBox(0, 0, 0, 0, 'Speed:')
         self.animation_speed.number_value = 1
 
-        self.alarm_amount_room = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height//2, 'Alarm amount:', 1, 1, ALARM_MAX)
-        self.room_choice = InputBox(SCREEN_WIDTH//2, SCREEN_HEIGHT - self.menu_height//2, 150, self.menu_height//2, 'Room number:', 1, 1, ROOM_NR_MAX)
-        self.calculate_button = Switch(SCREEN_WIDTH//2 + 240, SCREEN_HEIGHT - self.menu_height, 150, self.menu_height, 'Calculating...', 'Calculate', RED, GREEN, False)
+        self.alarm_amount_room = InputBox(0, 0, 0, 0, 'Alarm amount:', 1, 1, ALARM_MAX)
+        self.room_choice = InputBox(0, 0, 0, 0, 'Room number:', 1, 1, ROOM_NR_MAX)
+        self.calculate_button = Switch(0, 0, 0, 0, 'Calculating...', 'Calculate', RED, GREEN, False)
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
         self.potential_max = NumberDisplay(0, 30, 140, 30, 'Potential max:')
 
-        self.update_layout(SCREEN_WIDTH, SCREEN_HEIGHT)
-
+        # Set positions based on initial screen size
+        self.update_layout(screen_width, screen_height)
 
     def update_layout(self, screen_width, screen_height):
-        top_margin = 10
+        self.menu_height = MENU_HEIGHT_MULTI * screen_height
+        self.rect.update(0, screen_height - self.menu_height, screen_width, self.menu_height)
+        menu_y = screen_height - self.menu_height
+
         gap = 8
+        top_margin = 10
+
+        # Quit button (right-aligned)
+        self.quit_button.rect.update(screen_width - 100, menu_y, 100, self.menu_height)
+
+        # Page toggles (bottom left)
+        self.room_toggle.rect.update(0, menu_y, 150, self.menu_height)
+        self.floor_toggle.rect.update(150, menu_y, 150, self.menu_height)
+        self.wave_sim.rect.update(300, menu_y, 150, self.menu_height)
+
+        # Alarm amount / room inputs (middle)
+        self.alarm_amount_room.rect_label.update(screen_width // 2, menu_y, 150, self.menu_height // 2)
+        self.alarm_amount_room.rect.update(screen_width // 2 + 150, menu_y, 150*0.5, self.menu_height // 2)
+        self.room_choice.rect_label.update(screen_width // 2, menu_y + self.menu_height // 2, 150, self.menu_height // 2)
+        self.room_choice.rect.update(screen_width // 2 + 150, menu_y + self.menu_height // 2, 150*0.5, self.menu_height // 2)
+        self.alarm_amount_floor.rect_label.update(screen_width // 2, menu_y, 150, self.menu_height // 2)
+        self.alarm_amount_floor.rect.update(screen_width // 2 + 150, menu_y, 150*0.5, self.menu_height // 2)
+        self.calculate_button.rect.update(screen_width // 2 + 240, menu_y, 150, self.menu_height)
+
+        # Coverage and potential displays (top left)
+        self.coverage_percentage_room.rect_label.update(0, 0, 140, self.menu_height // 2)
+        self.coverage_percentage_room.rect.update(0 + 140, 0, 140*0.5, self.menu_height // 2)
+        self.potential_max.rect_label.update(0, self.menu_height // 2, 140, self.menu_height // 2)
+        self.potential_max.rect.update(0 + 140, self.menu_height // 2, 140*0.5, self.menu_height // 2)
+
+        # Animation speed (top right)
         speed_width = 140
         speed_height = 30
         total_speed_width = speed_width * 1.5
-
         speed_x = screen_width - top_margin - total_speed_width
         speed_y = top_margin
-
         self.animation_speed.rect_label.update(speed_x, speed_y, speed_width, speed_height)
         self.animation_speed.rect.update(speed_x + speed_width, speed_y, speed_width * 0.5, speed_height)
 
+        # Pause button near top right
         pause_width = 120
         pause_height = speed_height
         pause_x = speed_x - gap - pause_width
