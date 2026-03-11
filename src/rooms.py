@@ -125,6 +125,10 @@ def get_room_mask(room_id=1, x_dim=200, y_dim=150):
             (90, 59, 25, 1),
             (115, 0, 1, 60),
         ],
+        8: [
+        ],
+        9: [
+        ],
     }
     if room_id not in room_layouts:
         raise ValueError(f"Invalid room ID {room_id}")
@@ -138,6 +142,8 @@ rooms = {
     5: get_room_mask(5, 200, 150), # Corridor with 4 rooms on each side, with doors
     6: get_room_mask(6, 200, 150), 
     7: get_room_mask(7, 200, 150),
+    8: get_room_mask(8, 200, 150), # Empty room, no obstacles, just borders
+    9: get_room_mask(9, 200, 150), 
 }
 
 def create_room_heatmap(obstacle_mask, potential=None):
@@ -195,5 +201,6 @@ def room_showcase(screen, room_number, left, top):
     scaled = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
     font = pygame.font.SysFont(None, 40)
     text_surf = font.render(f'Room {room_number}', True, RED)
+    text_rect = pygame.Rect(target_rect.centerx - text_surf.get_width() // 2, target_rect.centery - text_surf.get_height() // 2, text_surf.get_width(), text_surf.get_height())
     screen.blit(scaled, target_rect)
-    screen.blit(text_surf, target_rect.center) # the center of the room rect
+    screen.blit(text_surf, text_rect) # the center of the room rect
