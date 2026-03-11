@@ -119,9 +119,9 @@ def main():
             room_showcase(screen, 2, left=screen.get_width()//3, top=0)
             room_showcase(screen, 3, left=2*screen.get_width()//3, top=0)
             room_showcase(screen, 4, left=0, top=screen.get_height()//3)   
-            #room_showcase(screen, 5, left=screen.get_width()//3, top=screen.get_height()//3)
-            #room_showcase(screen, 6, left=2*screen.get_width()//3, top=screen.get_height()//3)  
-            #room_showcase(screen, 7, left=0, top=2*screen.get_height()//3)
+            room_showcase(screen, 5, left=screen.get_width()//3, top=screen.get_height()//3)
+            room_showcase(screen, 6, left=2*screen.get_width()//3, top=screen.get_height()//3)  
+            room_showcase(screen, 7, left=0, top=2*screen.get_height()//3)
             #room_showcase(screen, 8, left=screen.get_width()//3, top=2*screen.get_height()//3)
             #room_showcase(screen, 9, left=2*screen.get_width()//3, top=2*screen.get_height()//3)
 

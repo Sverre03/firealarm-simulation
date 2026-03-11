@@ -79,6 +79,51 @@ def get_room_mask(room_id=1, x_dim=200, y_dim=150):
             (171, 68, 1, 50),
             (171, 100, 29, 1),
             (171, 133, 1, 27),
+        ], 
+        5: [
+            (0, 60, 17, 1),
+            (33, 60, 34, 1),
+            (83, 60, 34, 1),
+            (133, 60, 34, 1),
+            (183, 60, 17, 1),
+
+            (50, 0, 1, 60),
+            (100, 0, 1, 60),
+            (150, 0, 1, 60),
+
+            (0, 90, 17, 1),
+            (33, 90, 34, 1),
+            (83, 90, 34, 1),
+            (133, 90, 34, 1),
+            (183, 90, 17, 1),
+
+            (50, 90, 1, 60),
+            (100, 90, 1, 60),
+            (150, 90, 1, 60),
+        ], 
+        6: [
+            (0, 50, 40, 1),
+            (55, 50, 5, 1),
+            (0, 80, 40, 1),
+            (55, 80, 5, 1),
+
+            (60, 0, 1, 51),
+            (60, 80, 1, 70),
+        ],
+        7: [
+            (0, 100, 5, 1),
+            (20, 100, 20, 1),
+            (30, 100, 1, 50),
+            (40, 80, 1, 21),
+            (40, 80, 20, 1),
+            (75, 80, 40, 1),
+            (115, 80, 1, 70),
+
+            (55, 78, 1, 2),
+            (55, 0, 1, 62),
+            (55, 59, 20, 1),
+            (90, 59, 25, 1),
+            (115, 0, 1, 60),
         ],
     }
     if room_id not in room_layouts:
@@ -90,6 +135,9 @@ rooms = {
     2: get_room_mask(2, 200, 150), # Room divided into 3x4 grid of smaller rooms
     3: get_room_mask(3, 200, 150), # Square room without a door in the middle of the larger room
     4: get_room_mask(4, 200, 150), # Livingroom with 3 bedrooms, 1 bathroom and entrance 
+    5: get_room_mask(5, 200, 150), # Corridor with 4 rooms on each side, with doors
+    6: get_room_mask(6, 200, 150), 
+    7: get_room_mask(7, 200, 150),
 }
 
 def create_room_heatmap(obstacle_mask, potential=None):
@@ -139,7 +187,7 @@ def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=No
 
 def room_showcase(screen, room_number, left, top):
     menu_offset = int(MENU_HEIGHT_MULTI * screen.get_height())
-    target_rect = pygame.Rect(left, top+2, screen.get_width()//3, screen.get_height()//3 - menu_offset)
+    target_rect = pygame.Rect(left, top+1, screen.get_width()//3, screen.get_height()//3 - menu_offset)
     obstacle_mask = rooms[room_number]
 
     heatmap = create_room_heatmap(obstacle_mask)
