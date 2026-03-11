@@ -40,11 +40,27 @@ def create_obstacle_mask_from_list(obstacle_list, x_dim=200, y_dim=150):
 def get_room_mask(room_id=1, x_dim=200, y_dim=150):
     room_layouts = {
         1: [
-            (25, 25, 40, 1),
-            (70, 25, 5, 1),
-            (75, 25, 1, 50),
-            (25, 26, 1, 50),
-            (26, 75, 50, 1),
+            (0, 30, 12, 1),
+            (27, 30, 13, 1),
+            (40, 0, 1, 35),
+
+            (30, 55, 1, 20),
+            (30, 55, 10, 1),
+            (57, 55, 1, 20),
+            (120, 0, 1, 45),
+
+            (0, 75, 40, 1),
+            (55, 75, 40, 1),
+            (110, 75, 20, 1),
+            (145, 75, 55, 1),
+
+            (60, 75, 1, 55),
+            (60, 103, 20, 1),
+            (80, 90, 1, 14),
+            (80, 90, 15, 1),
+            (120, 75, 1, 35),
+            (110, 100, 10, 1),
+            (120, 140, 1, 10), 
         ],
         # Room divided into 3x4 grid of smaller rooms
         2: [
@@ -58,10 +74,29 @@ def get_room_mask(room_id=1, x_dim=200, y_dim=150):
         ],
 
         3: [
-            (20, 20, 60, 1),
-            (20, 20, 1, 60),
-            (80, 20, 1, 60),
-            (20, 80, 61, 1),
+            (20, 20, 40, 1),
+            (20, 20, 1, 40),
+            (60, 20, 1, 10),
+            (60, 50, 1, 10),
+            (20, 60, 41, 1),
+
+            (140, 20, 40, 1),
+            (140, 20, 1, 10),
+            (140, 50, 1, 10),
+            (180, 20, 1, 40),
+            (140, 60, 41, 1),
+
+            (20, 90, 40, 1),
+            (20, 90, 1, 40),
+            (60, 90, 1, 10),
+            (60, 120, 1, 10),
+            (20, 130, 41, 1),
+
+            (140, 90, 40, 1),
+            (140, 90, 1, 10),
+            (140, 120, 1, 10),
+            (180, 90, 1, 40),
+            (140, 130, 41, 1),
         ],
         4: [
             (50, 34, 1, 34),
@@ -126,6 +161,15 @@ def get_room_mask(room_id=1, x_dim=200, y_dim=150):
             (115, 0, 1, 60),
         ],
         8: [
+            (0, 75, 45, 1),
+            (90, 0, 1, 55),
+            (90, 55, 45, 1),
+            (135, 15, 1, 41),
+
+            (135, 70, 65, 1),
+            (135, 86, 1, 64),
+            (90, 117, 1, 33),
+            (90, 117, 30, 1),
         ],
         9: [
         ],
@@ -135,15 +179,15 @@ def get_room_mask(room_id=1, x_dim=200, y_dim=150):
     return create_obstacle_mask_from_list(room_layouts[room_id], x_dim=x_dim, y_dim=y_dim)
 
 rooms = {
-    1: get_room_mask(1, 200, 150), # Square room with a door in the middle of the larger room
+    1: get_room_mask(1, 200, 150), # Complex room with various obstacles, walls and corridors
     2: get_room_mask(2, 200, 150), # Room divided into 3x4 grid of smaller rooms
-    3: get_room_mask(3, 200, 150), # Square room without a door in the middle of the larger room
+    3: get_room_mask(3, 200, 150), # 4 square rooma with a door in the corners of the larger room
     4: get_room_mask(4, 200, 150), # Livingroom with 3 bedrooms, 1 bathroom and entrance 
     5: get_room_mask(5, 200, 150), # Corridor with 4 rooms on each side, with doors
     6: get_room_mask(6, 200, 150), 
     7: get_room_mask(7, 200, 150),
-    8: get_room_mask(8, 200, 150), # Empty room, no obstacles, just borders
-    9: get_room_mask(9, 200, 150), 
+    8: get_room_mask(8, 200, 150), 
+    9: get_room_mask(9, 200, 150), # Empty room, no obstacles, just borders
 }
 
 def create_room_heatmap(obstacle_mask, potential=None):
