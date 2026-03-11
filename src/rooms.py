@@ -89,7 +89,7 @@ rooms = {
     1: get_room_mask(1, 200, 150), # Square room with a door in the middle of the larger room
     2: get_room_mask(2, 200, 150), # Room divided into 3x4 grid of smaller rooms
     3: get_room_mask(3, 200, 150), # Square room without a door in the middle of the larger room
-    4: get_room_mask(4, 200, 150), # More complex room with multiple smaller rooms and doors
+    4: get_room_mask(4, 200, 150), # Livingroom with 3 bedrooms, 1 bathroom and entrance 
 }
 
 def create_room_heatmap(obstacle_mask, potential=None):
@@ -132,3 +132,7 @@ def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=No
             py = int((ay + 0.5) * target_rect.height / y_dim) + target_rect.y
             pygame.draw.circle(screen, RED, (px, py), 6)
             pygame.draw.circle(screen, BLACK, (px, py), 6, width=1)
+            font = pygame.font.SysFont(None, 20)
+            text_surf = font.render('(' + str(ax) + ', ' + str(ay) + ')', True, RED)
+            text_rect = pygame.Rect(px - text_surf.get_width() // 2, py + 12, text_surf.get_width(), text_surf.get_height())
+            screen.blit(text_surf, text_rect)
