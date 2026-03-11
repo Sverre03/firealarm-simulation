@@ -18,7 +18,6 @@ class Menu:
         self.floor_toggle = Toggle(0, 0, 0, 0, 'Available rooms', 'Available rooms', False, 1)
         self.pause_button = Switch(0, 0, 0, 0, 'Unpause', 'Pause', GREEN, RED, False)
         self.wave_sim = Toggle(0, 0, 0, 0, 'Wave sim', 'Wave sim', False, 1)
-        self.alarm_amount_floor = InputBox(0, 0, 0, 0, 'Alarm amount:', 0, 1, ALARM_MAX)
         self.animation_speed = InputBox(0, 0, 0, 0, 'Speed:')
         self.animation_speed.number_value = 1
 
@@ -52,8 +51,6 @@ class Menu:
         self.alarm_amount_room.rect.update(screen_width // 2 + 150, menu_y, 150*0.5, self.menu_height // 2)
         self.room_choice.rect_label.update(screen_width // 2, menu_y + self.menu_height // 2, 150, self.menu_height // 2)
         self.room_choice.rect.update(screen_width // 2 + 150, menu_y + self.menu_height // 2, 150*0.5, self.menu_height // 2)
-        self.alarm_amount_floor.rect_label.update(screen_width // 2, menu_y, 150, self.menu_height // 2)
-        self.alarm_amount_floor.rect.update(screen_width // 2 + 150, menu_y, 150*0.5, self.menu_height // 2)
         self.calculate_button.rect.update(screen_width // 2 + 240, menu_y, 150, self.menu_height)
 
         # Coverage and potential displays (top left)
@@ -98,9 +95,6 @@ class Menu:
             self.coverage_percentage_room.draw(screen, "%")
             self.potential_max.draw(screen)
 
-        if self.floor_toggle.state and self.floor_toggle.value == 0:
-            self.alarm_amount_floor.draw(screen)
-
         if self.wave_sim.state and self.wave_sim.value == 0:
             self.pause_button.draw(screen)
             self.animation_speed.draw(screen)
@@ -136,5 +130,3 @@ class Menu:
             self.alarm_amount_room.handle_event(event)
             self.room_choice.handle_event(event)
 
-        if self.floor_toggle.state and self.floor_toggle.value ==0:
-            self.alarm_amount_floor.handle_event(event)

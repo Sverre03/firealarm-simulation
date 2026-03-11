@@ -5,7 +5,7 @@ from buttons import *
 from config import *
 from ui import *
 from FEM import FEM_draw, FEM_setup
-from rooms import draw_room, rooms
+from rooms import draw_room, room_showcase, rooms
 from room_optimization import optimize_alarms
 
 def main():
@@ -113,6 +113,17 @@ def main():
                 draw_room(screen, room_choice, potential=room_result.potential, alarms=room_result.alarm_positions)
             else: # Draw room without potentials
                 draw_room(screen, room_choice)
+
+        if ui.floor_toggle.state and ui.floor_toggle.value == 0:
+            room_showcase(screen, 1, left=0, top=0)
+            room_showcase(screen, 2, left=screen.get_width()//3, top=0)
+            room_showcase(screen, 3, left=2*screen.get_width()//3, top=0)
+            room_showcase(screen, 4, left=0, top=screen.get_height()//3)   
+            #room_showcase(screen, 5, left=screen.get_width()//3, top=screen.get_height()//3)
+            #room_showcase(screen, 6, left=2*screen.get_width()//3, top=screen.get_height()//3)  
+            #room_showcase(screen, 7, left=0, top=2*screen.get_height()//3)
+            #room_showcase(screen, 8, left=screen.get_width()//3, top=2*screen.get_height()//3)
+            #room_showcase(screen, 9, left=2*screen.get_width()//3, top=2*screen.get_height()//3)
 
         else:
             previous_calculate_state = ui.calculate_button.state

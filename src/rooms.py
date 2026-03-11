@@ -136,3 +136,16 @@ def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=No
             text_surf = font.render('(' + str(ax) + ', ' + str(ay) + ')', True, RED)
             text_rect = pygame.Rect(px - text_surf.get_width() // 2, py + 12, text_surf.get_width(), text_surf.get_height())
             screen.blit(text_surf, text_rect)
+
+def room_showcase(screen, room_number, left, top):
+    menu_offset = int(MENU_HEIGHT_MULTI * screen.get_height())
+    target_rect = pygame.Rect(left, top+2, screen.get_width()//3, screen.get_height()//3 - menu_offset)
+    obstacle_mask = rooms[room_number]
+
+    heatmap = create_room_heatmap(obstacle_mask)
+    surface = pygame.surfarray.make_surface(heatmap)
+    scaled = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
+    font = pygame.font.SysFont(None, 40)
+    text_surf = font.render(f'Room {room_number}', True, RED)
+    screen.blit(scaled, target_rect)
+    screen.blit(text_surf, target_rect.center) # the center of the room rect
