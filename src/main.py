@@ -32,15 +32,15 @@ def main():
     optimization_pool = ThreadPoolExecutor(max_workers=1)
     optimization_task = None
 
-    potential_1D_wave, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)    
-    number_of_timesteps=potential_1D_wave.shape[1]
+    # potential_1D_wave, number_of_nodes = FEM_setup(SCREEN_WIDTH, SCREEN_HEIGHT)    
+    # number_of_timesteps=potential_1D_wave.shape[1]
 
     # x-coordinates in pixels
-    x_pixels = np.linspace(50, SCREEN_WIDTH - 50, number_of_nodes)
+    # x_pixels = np.linspace(50, SCREEN_WIDTH - 50, number_of_nodes)
 
     # auto-scale displacement
-    potential_1D_wave_max = np.max(np.abs(potential_1D_wave))
-    y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) / potential_1D_wave_max
+    # potential_1D_wave_max = np.max(np.abs(potential_1D_wave))
+    # y_scale = 0.4 * (SCREEN_HEIGHT - MENU_HEIGHT_MULTI*SCREEN_HEIGHT) / potential_1D_wave_max
 
     clock = pygame.time.Clock()
 
@@ -67,10 +67,10 @@ def main():
         screen.fill(GREY)
 
         speed = max(0.0, float(ui.animation_speed.number_value))
-        if ui.wave_sim.state and ui.wave_sim.value == 0:
-            if not ui.pause_button.state:
-                wave_frame = (wave_frame + speed) % number_of_timesteps
-            FEM_draw(screen, int(wave_frame), potential_1D_wave, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, number_of_timesteps, paused=ui.pause_button.state)
+        # if ui.wave_sim.state and ui.wave_sim.value == 0:
+            # if not ui.pause_button.state:
+                # wave_frame = (wave_frame + speed) % number_of_timesteps
+            # FEM_draw(screen, int(wave_frame), potential_1D_wave, number_of_nodes, x_pixels, SCREEN_WIDTH, SCREEN_HEIGHT, y_scale, number_of_timesteps, paused=ui.pause_button.state)
         if ui.room_toggle.state and ui.room_toggle.value == 0:
             calculation_requested = ui.calculate_button.state and not previous_calculate_state
             previous_calculate_state = ui.calculate_button.state
