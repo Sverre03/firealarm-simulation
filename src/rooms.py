@@ -231,7 +231,7 @@ def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=No
             pygame.draw.circle(screen, RED, (px, py), 6)
             pygame.draw.circle(screen, BLACK, (px, py), 6, width=1)
             font = pygame.font.SysFont(None, 20)
-            text_surf = font.render('(' + str(ax) + ', ' + str(ay) + ')', True, RED)
+            text_surf = font.render('(' + str(ax) + ', ' + str(150-ay) + ')', True, RED)
             text_rect = pygame.Rect(px - text_surf.get_width() // 2, py + 12, text_surf.get_width(), text_surf.get_height())
             screen.blit(text_surf, text_rect)
 
