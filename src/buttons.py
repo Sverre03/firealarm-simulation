@@ -201,7 +201,7 @@ class NumberDisplay:
     def __init__(self, x, y, width, height, label=''):
         self.rect = pygame.Rect(x + width, y, width*0.5, height)
         self.rect_label = pygame.Rect(x, y, width, height)
-        self.color = TOGGLE_ON
+        self.color = GREY
         self.value = 0
         self.label = label
         self.font = pygame.font.SysFont(None, 24)
@@ -210,10 +210,13 @@ class NumberDisplay:
         pygame.draw.rect(screen, self.color, self.rect)
         pygame.draw.rect(screen, self.color, self.rect_label)
 
-        display_text = f"{self.value:.1f}{suffix}"
-        text_surf = self.font.render(display_text, True, BLACK)
+        display_text = f"{self.value:.1f}"
+        display_suffix = suffix if suffix else ''
+        text_surf = self.font.render(display_text, True, BLUE)
+        text_surf_suffix = self.font.render(display_suffix, True, BLACK)
         text_rect = text_surf.get_rect(center=self.rect.center)
         screen.blit(text_surf, text_rect)
+        screen.blit(text_surf_suffix, (text_rect.right + 5, text_rect.top))
 
         text_surf_label = self.font.render(self.label, True, BLACK)
         text_rect_label = text_surf_label.get_rect(center=self.rect_label.center)

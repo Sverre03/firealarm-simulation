@@ -13,7 +13,7 @@ class Menu:
         self.rect = pygame.Rect(0, screen_height - self.menu_height, screen_width, self.menu_height)
 
         # Create widgets without fixed coordinates
-        self.quit_button = Switch(0, 0, 0, 0, 'Quit', 'Quit', GREEN, RED, False)
+        self.quit_button = Switch(0, 0, 0, 0, 'Quit', 'Quit', TOGGLE_OFF, RED, False)
         self.room_toggle = Toggle(0, 0, 0, 0, 'Room heatmap', 'Room heatmap', True, 0)
         self.floor_toggle = Toggle(0, 0, 0, 0, 'Available rooms', 'Available rooms', False, 1)
         self.pause_button = Switch(0, 0, 0, 0, 'Unpause', 'Pause', GREEN, RED, False)
@@ -23,7 +23,7 @@ class Menu:
 
         self.alarm_amount_room = InputBox(0, 0, 0, 0, 'Alarm amount:', 1, 1, ALARM_MAX)
         self.room_choice = InputBox(0, 0, 0, 0, 'Room number:', 1, 1, ROOM_NR_MAX)
-        self.calculate_button = Switch(0, 0, 0, 0, 'Calculating...', 'Calculate', RED, GREEN, False)
+        self.calculate_button = Switch(0, 0, 0, 0, 'Calculating...', 'Calculate', TOGGLE_OFF, GREEN, False)
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
         self.potential_max = NumberDisplay(0, 30, 140, 30, 'Potential max:')
 
