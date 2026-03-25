@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pygame
-from config import BLACK, DARK_GREY, GREEN, RED, DARK_GREY_BLUE, MENU_HEIGHT_MULTI, SOUND_THRESHOLD
+from config import BLACK, BROWN, DARK_GREY, GREEN, RED, DARK_GREY_BLUE, MENU_HEIGHT_MULTI, SOUND_THRESHOLD
 
 class Obstacle:
     def __init__(self, x_start, x_end, y_start, y_end):
@@ -231,7 +231,7 @@ def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=No
             pygame.draw.circle(screen, RED, (px, py), 6)
             pygame.draw.circle(screen, BLACK, (px, py), 6, width=1)
             font = pygame.font.SysFont(None, 20)
-            text_surf = font.render('(' + str(ax) + ', ' + str(ay) + ')', True, RED)
+            text_surf = font.render('(' + str(ax) + ', ' + str(150-ay) + ')', True, RED)
             text_rect = pygame.Rect(px - text_surf.get_width() // 2, py + 12, text_surf.get_width(), text_surf.get_height())
             screen.blit(text_surf, text_rect)
 
@@ -244,7 +244,7 @@ def room_showcase(screen, room_number, left, top):
     surface = pygame.surfarray.make_surface(heatmap)
     scaled = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
     font = pygame.font.SysFont(None, 40)
-    text_surf = font.render(f'Room {room_number}', True, RED)
+    text_surf = font.render(f'Room No.{room_number}', True, BROWN)
     text_rect = pygame.Rect(target_rect.centerx - text_surf.get_width() // 2, target_rect.centery - text_surf.get_height() // 2, text_surf.get_width(), text_surf.get_height())
     screen.blit(scaled, target_rect)
     screen.blit(text_surf, text_rect) # the center of the room rect
