@@ -215,7 +215,7 @@ def create_room_heatmap(obstacle_mask, potential=None):
 def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=None):
     top_margin = int(MENU_HEIGHT_MULTI * screen.get_height())
     menu_offset = int(MENU_HEIGHT_MULTI * screen.get_height())
-    target_rect = pygame.Rect(screen.get_width()*0.05, top_margin*1.1, screen.get_width() - screen.get_width()*0.1, screen.get_height() - menu_offset - top_margin*1.2)
+    target_rect = pygame.Rect(screen.get_width()*0.05, top_margin*0.6, screen.get_width() - screen.get_width()*0.1, screen.get_height() - menu_offset - top_margin*1.2)
     obstacle_mask = rooms[room_number]
 
     heatmap = create_room_heatmap(obstacle_mask, potential=potential)
