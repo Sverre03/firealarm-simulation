@@ -24,6 +24,7 @@ def FDM_solve(obstacle_mask, alarm_positions):
 
     # Finite difference method:
     # u_tt + gamma * u_t = c^2 * Laplacian(u) + f(x, y, t)
+    # https://www.scirp.org/journal/paperinformation?paperid=112134
 
     x_dim, y_dim = obstacle_mask.shape
     free_mask = ~obstacle_mask
@@ -38,6 +39,7 @@ def FDM_solve(obstacle_mask, alarm_positions):
 
     Cx = wave_speed * dt / dx # Courant number
     Cx2 = Cx**2 # Stability condition for explicit scheme, must be <= 0.5
+    print(Cx2)
     if Cx2 > 0.5:
         print(f"Ustabilt valg av parametere, Cx^2 = {Cx2:.3f} > 0.5.")
 
