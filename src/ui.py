@@ -51,8 +51,8 @@ class Menu:
         self.calculate_button.rect.update(screen_width // 2 + 240, menu_y, 150, self.menu_height)
 
         # Coverage and potential displays (top left)
-        self.coverage_percentage_room.rect_label.update(0, 0, 140, self.menu_height // 2)
-        self.coverage_percentage_room.rect.update(0 + 140, 0, 140*0.5, self.menu_height // 2)
+        self.coverage_percentage_room.rect_label.update(0, self.menu_height//12, 140, self.menu_height // 2)
+        self.coverage_percentage_room.rect.update(0 + 100, self.menu_height//12, 140*0.5, self.menu_height // 2)
 
         # Animation speed (top right)
         speed_width = 140
