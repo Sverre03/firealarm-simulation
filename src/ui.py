@@ -17,7 +17,6 @@ class Menu:
         self.room_toggle = Toggle(0, 0, 0, 0, 'Room heatmap', 'Room heatmap', True, 0)
         self.floor_toggle = Toggle(0, 0, 0, 0, 'Available rooms', 'Available rooms', False, 1)
         self.pause_button = Switch(0, 0, 0, 0, 'Unpause', 'Pause', GREEN, RED, False)
-        self.wave_sim = Toggle(0, 0, 0, 0, 'Wave sim', 'Wave sim', False, 1)
         self.animation_speed = InputBox(0, 0, 0, 0, 'Speed:')
         self.animation_speed.number_value = 1
 
@@ -44,7 +43,6 @@ class Menu:
         # Page toggles (bottom left)
         self.room_toggle.rect.update(0, menu_y, 150, self.menu_height)
         self.floor_toggle.rect.update(150, menu_y, 150, self.menu_height)
-        self.wave_sim.rect.update(300, menu_y, 150, self.menu_height)
 
         # Alarm amount / room inputs (middle)
         self.alarm_amount_room.rect_label.update(screen_width // 2, menu_y, 150, self.menu_height // 2)
@@ -56,8 +54,6 @@ class Menu:
         # Coverage and potential displays (top left)
         self.coverage_percentage_room.rect_label.update(0, 0, 140, self.menu_height // 2)
         self.coverage_percentage_room.rect.update(0 + 140, 0, 140*0.5, self.menu_height // 2)
-        self.potential_max.rect_label.update(0, self.menu_height // 2, 140, self.menu_height // 2)
-        self.potential_max.rect.update(0 + 140, self.menu_height // 2, 140*0.5, self.menu_height // 2)
 
         # Animation speed (top right)
         speed_width = 140
@@ -85,7 +81,6 @@ class Menu:
         self.quit_button.draw(screen)
         self.room_toggle.draw(screen)
         self.floor_toggle.draw(screen)
-        self.wave_sim.draw(screen)
         
         # Draw input boxes if toggles are active
         if self.room_toggle.state and self.room_toggle.value == 0:
@@ -93,12 +88,6 @@ class Menu:
             self.room_choice.draw(screen)
             self.calculate_button.draw(screen)
             self.coverage_percentage_room.draw(screen, "%")
-            self.potential_max.draw(screen)
-
-        if self.wave_sim.state and self.wave_sim.value == 0:
-            self.pause_button.draw(screen)
-            self.animation_speed.draw(screen)
-
 
     def update(self, dt, value):
         self.quit_button.update(dt)
@@ -108,20 +97,11 @@ class Menu:
             self.calculate_button.update(dt)
         if self.room_toggle.state and self.room_toggle.value ==0:
             self.floor_toggle.value = 1
-            self.wave_sim.value = 1
             self.coverage_percentage_room.update(value[0])
-            self.potential_max.update(value[1])
 
         self.floor_toggle.update(dt)
         if self.floor_toggle.state and self.floor_toggle.value ==0:
             self.room_toggle.value = 1
-            self.wave_sim.value = 1
-
-        self.wave_sim.update(dt)
-        if self.wave_sim.state and self.wave_sim.value ==0:
-            self.room_toggle.value = 1
-            self.floor_toggle.value = 1
-
 
     # Handle events for input boxes
     def handle_event(self, event):
