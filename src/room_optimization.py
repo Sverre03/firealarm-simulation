@@ -2,14 +2,24 @@ from dataclasses import dataclass
 import numpy as np
 
 from optimalisering2d import expected_improvement, loop
-from config import WAVE_SOURCE_STRENGTH, WAVE_THRESHOLD, WAVE_STEPS, WAVE_WARMUP_STEPS, WAVE_SPEED, WAVE_DT, WAVE_DX, WAVE_DAMPING, WAVE_FREQUENCY
+from config import (
+    WAVE_SOURCE_STRENGTH,
+    WAVE_THRESHOLD,
+    WAVE_STEPS,
+    WAVE_WARMUP_STEPS,
+    WAVE_SPEED,
+    WAVE_DT,
+    WAVE_DX,
+    WAVE_DAMPING,
+    WAVE_FREQUENCY,
+)
 
 @dataclass
 class OptimizationResult:
     alarm_positions: list[tuple[int, int]]
-    potential: np.ndarray
+    sound_pressure: np.ndarray
     coverage_percentage: float
-    potential_max: float
+    sound_pressure_max: float
 
 def FDM_solve(obstacle_mask, alarm_positions):
     source_strength = WAVE_SOURCE_STRENGTH
@@ -39,7 +49,6 @@ def FDM_solve(obstacle_mask, alarm_positions):
 
     Cx = wave_speed * dt / dx # Courant number
     Cx2 = Cx**2 # Stability condition for explicit scheme, must be <= 0.5
-    print(Cx2)
     if Cx2 > 0.5:
         print(f"Ustabilt valg av parametere, Cx^2 = {Cx2:.3f} > 0.5.")
 
@@ -47,8 +56,10 @@ def FDM_solve(obstacle_mask, alarm_positions):
     rms_count = 0
     omega = 2.0 * np.pi * frequency
 
-    D2 = 1.0 - gamma * dt 
-    D1 = 2.0 - gamma * dt
+    # D2 = 1.0 - gamma * dt 
+    # D1 = 2.0 - gamma * dt
+    D2 = 1
+    D1 = 2
 
     for step in range(n_steps):
         left = u_current[:-2, 1:-1]
@@ -62,13 +73,15 @@ def FDM_solve(obstacle_mask, alarm_positions):
         up_obs = obstacle_mask[1:-1, 2:]
 
         # Approksimasjon av Neumann grensebetingelser ved å reflektere verdier ved hindringer
-        left_effective = np.where(left_obs, right, left)
-        right_effective = np.where(right_obs, left, right)
-        down_effective = np.where(down_obs, up, down)
-        up_effective = np.where(up_obs, down, up)
+        center = u_current[1:-1, 1:-1]
+
+        left_effective = np.where(left_obs, 0.0 * right, left)
+        right_effective = np.where(right_obs, 0.0 * left, right)
+        down_effective = np.where(down_obs, 0.0 * up, down)
+        up_effective = np.where(up_obs, 0.0 * down, up)
 
         # Laplacian
-        u_xx = left_effective + right_effective + down_effective + up_effective - 4.0 * u_current[1:-1, 1:-1]
+        u_xx = left_effective + right_effective + down_effective + up_effective - 4.0 * center
 
         u_next = np.zeros_like(u_current)
         # Oppdater med FDM, delvis inspirert av hplgit.github.io/fdm-book/doc/pub/book/sphinx/._book008.html
@@ -76,13 +89,15 @@ def FDM_solve(obstacle_mask, alarm_positions):
         u_next[1:-1, 1:-1] = (D1*u_current[1:-1, 1:-1] # + (2 - gamma * dt) * u[i,j][n]
                               - D2*u_prev[1:-1, 1:-1] # + (1 - gamma * dt) * u[i,j][n-1]
                               + Cx2 * u_xx) # Cx^2 * Laplacian(u[i,j][n])
+        
+        # D1 og D2 er absorpsjonskoeffisienter. Hvis D1 = 2 og D2 = 1 har vi ingen absorpsjon. 
 
         # Simulerer en sinusformet kilde ved hver alarmplassering
         strength = source_strength * np.sin(omega * step * dt)
         for x, y in valid_sources:
             u_next[x, y] += (dt * dt) * strength # dt^2 * f(x, y, t)
 
-        u_next[obstacle_mask] = 0.0
+        # u_next[obstacle_mask] = 0.0
 
         if step >= warmup_steps:
             rms_accum += u_next * u_next
@@ -96,8 +111,8 @@ def FDM_solve(obstacle_mask, alarm_positions):
     free_cells = int(np.count_nonzero(free_mask))
     covered_cells = int(np.count_nonzero(covered_mask))
     coverage = (100.0 * covered_cells / free_cells)
-    potential_max = float(np.max(rms_map[free_mask]))
-    return rms_map, coverage, potential_max
+    sound_pressure_max = float(np.max(rms_map[free_mask]))
+    return rms_map, coverage, sound_pressure_max
 
 
 def build_candidate_points(obstacle_mask, spacing):
@@ -153,15 +168,15 @@ def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=3
 
     candidate_layouts = np.asarray(build_domain(candidates, n_alarms, domain_limit, rng), dtype=float)
 
-    cache = {} # Lagrer coverage, potential og max_potential for hver layout
+    cache = {} # Lagrer coverage, sound_pressure og max_sound_pressure for hver layout
 
     def objective(alarm_coordinates):
         layout_key = tuple(sorted_alarm_positions(alarm_coordinates, n_alarms))
         if layout_key in cache:
             return cache[layout_key][0]
 
-        potential, coverage, max_potential = FDM_solve(obstacle_mask, alarm_positions=list(layout_key))
-        cache[layout_key] = (coverage, potential, max_potential)
+        sound_pressure, coverage, max_sound_pressure = FDM_solve(obstacle_mask, alarm_positions=list(layout_key))
+        cache[layout_key] = (coverage, sound_pressure, max_sound_pressure)
         return coverage
 
     init_count = min(max(1, init_samples), len(candidate_layouts))
@@ -173,6 +188,6 @@ def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=3
     alarm_positions = sorted_alarm_positions(layout_samples[best_idx], n_alarms)
     best_key = tuple(alarm_positions)
 
-    coverage, potential, max_potential = cache[best_key]
+    coverage, sound_pressure, max_sound_pressure = cache[best_key]
 
-    return OptimizationResult(alarm_positions, potential, coverage, max_potential)
+    return OptimizationResult(alarm_positions, sound_pressure, coverage, max_sound_pressure)

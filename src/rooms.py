@@ -190,19 +190,19 @@ rooms = {
     9: get_room_mask(9, 200, 150), # Empty room, no obstacles, just borders
 }
 
-def create_room_heatmap(obstacle_mask, potential=None):
+def create_room_heatmap(obstacle_mask, sound_pressure=None):
     x_dim, y_dim = obstacle_mask.shape
     heatmap = np.full((x_dim, y_dim, 3), 243, dtype=np.uint8)
 
-    if potential is not None:
+    if sound_pressure is not None:
         free_mask = ~obstacle_mask
         if np.any(free_mask):
-            free_values = potential[free_mask]
-            normalized_potential = np.clip((potential - free_values.min()) / (free_values.max() - free_values.min()), 0.0, 1.0)
+            free_values = sound_pressure[free_mask]
+            normalized_sound_pressure = np.clip((sound_pressure - free_values.min()) / (free_values.max() - free_values.min()), 0.0, 1.0)
 
-            heatmap = (plt.cm.viridis(normalized_potential)[:, :, :3] * 255)
+            heatmap = (plt.cm.viridis(normalized_sound_pressure)[:, :, :3] * 255)
 
-            covered = (potential >= SOUND_THRESHOLD) & free_mask
+            covered = (sound_pressure >= SOUND_THRESHOLD) & free_mask
             below_threshold = (~covered) & free_mask
             bg = np.array(DARK_GREY_BLUE, dtype=np.float32)
             heatmap[below_threshold] = (
@@ -212,13 +212,13 @@ def create_room_heatmap(obstacle_mask, potential=None):
     heatmap[obstacle_mask] = np.array(DARK_GREY, dtype=np.uint8)
     return heatmap
 
-def draw_room(screen, room_number, color=RED, scale=5, potential=None, alarms=None):
+def draw_room(screen, room_number, color=RED, scale=5, sound_pressure=None, alarms=None):
     top_margin = int(MENU_HEIGHT_MULTI * screen.get_height())
     menu_offset = int(MENU_HEIGHT_MULTI * screen.get_height())
     target_rect = pygame.Rect(screen.get_width()*0.05, top_margin*1.1, screen.get_width() - screen.get_width()*0.1, screen.get_height() - menu_offset - top_margin*1.2)
     obstacle_mask = rooms[room_number]
 
-    heatmap = create_room_heatmap(obstacle_mask, potential=potential)
+    heatmap = create_room_heatmap(obstacle_mask, sound_pressure=sound_pressure)
     surface = pygame.surfarray.make_surface(heatmap)
     scaled = pygame.transform.scale(surface, (target_rect.width, target_rect.height))
     screen.blit(scaled, target_rect)

@@ -22,12 +22,12 @@ def main():
     # Main loop
     running = True
     coverage_percentage = 0.0
-    potential_max = 0.0
+    sound_pressure_max = 0.0
     number_values = [0.0, 0.0]  # List to hold values for updating the UI
     calculating = False
     previous_calculate_state = ui.calculate_button.state
     room_result = None # Returned by the optimization function,
-    # Should contain the potential, alarm positions, coverage and maybe other stuff that has been calculated
+    # Should contain the sound_pressure, alarm positions, coverage and maybe other stuff that has been calculated
     optimization_pool = ThreadPoolExecutor(max_workers=1)
     optimization_task = None
 
@@ -46,7 +46,7 @@ def main():
         
         # Update
         number_values[0] = coverage_percentage
-        number_values[1] = potential_max
+        number_values[1] = sound_pressure_max
         ui.update(dt, number_values[0:])
         
         if ui.quit_button.state:
@@ -64,13 +64,13 @@ def main():
                 # Reset results when room changes.
                 room_result = None
                 coverage_percentage = 0.0
-                potential_max = 0.0
+                sound_pressure_max = 0.0
                 ui.room_choice.number_value_past = ui.room_choice.number_value
 
             if calculating and optimization_task is not None and optimization_task.done():
                 room_result = optimization_task.result()
                 coverage_percentage = room_result.coverage_percentage
-                potential_max = room_result.potential_max
+                sound_pressure_max = room_result.sound_pressure_max
 
                 calculating = False
                 ui.calculate_button.set_state(False)
@@ -89,14 +89,14 @@ def main():
                 # Reset results when alarm count changes.
                 room_result = None
                 coverage_percentage = 0.0
-                potential_max = 0.0
+                sound_pressure_max = 0.0
                 ui.alarm_amount_room.number_value_past = ui.alarm_amount_room.number_value
 
             room_choice = ui.room_choice.number_value if ui.room_choice.number_value in rooms else 1
 
             if room_result is not None: # Draw heatmap
-                draw_room(screen, room_choice, potential=room_result.potential, alarms=room_result.alarm_positions)
-            else: # Draw room without potentials
+                draw_room(screen, room_choice, sound_pressure=room_result.sound_pressure, alarms=room_result.alarm_positions)
+            else: # Draw room without sound_pressures
                 draw_room(screen, room_choice)
 
         if ui.floor_toggle.state and ui.floor_toggle.value == 0:
