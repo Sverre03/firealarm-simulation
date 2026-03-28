@@ -15,7 +15,7 @@ def loop(x_init, sim_func,  acq_func, domain, tol=1e-2,  debug=False, save_inter
         "x_next": [],
         "save_interval": save_interval,
     }
-
+    log_sim = lambda x: np.log(np.maximum(sim_func(x), 1e-8))
     gpr = GaussianProcessRegressor(kernel=Matern(nu=2.5), normalize_y=True)
 
     acq_max = np.inf
@@ -38,7 +38,7 @@ def loop(x_init, sim_func,  acq_func, domain, tol=1e-2,  debug=False, save_inter
         x_next = domain[idx_next]
         acq_max = float(current_acq[idx_next])
 
-        score_next = float(sim_func(x_next))
+        score_next = float(log_sim(x_next))
 
         if iteration % history["save_interval"] == 0:
             history["x_next"].append(x_next)
@@ -47,7 +47,7 @@ def loop(x_init, sim_func,  acq_func, domain, tol=1e-2,  debug=False, save_inter
         Y_samples = np.append(Y_samples, score_next)
 
         if debug:
-            print(f"iter={iteration} acq_max={acq_max:.6g} x_next={x_next} score={score_next:.6g}")
+            print(f"iter={iteration} acq_max={acq_max:.6g} log-coverage={score_next:.2f}")
 
     return X_samples, Y_samples, history
 

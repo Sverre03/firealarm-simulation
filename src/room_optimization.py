@@ -1,18 +1,30 @@
 from dataclasses import dataclass
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import time
 import numpy as np
 
-from optimalisering2d import expected_improvement, loop
 from config import (
-    WAVE_SOURCE_STRENGTH,
     WAVE_THRESHOLD,
     WAVE_STEPS,
     WAVE_WARMUP_STEPS,
-    WAVE_SPEED,
-    WAVE_DT,
-    WAVE_DX,
     WAVE_DAMPING,
-    WAVE_FREQUENCY,
+    ROOM_WIDTH_M,
+    ROOM_HEIGHT_M,
+    GRID_CELLS_X,
+    GRID_CELLS_Y,
+    CELL_SIZE_M,
+    ALARM_FREQUENCY_HZ,
+    ALARM_SOURCE_STRENGTH_FDM,
+    ALARM_SOURCE_STRENGTH_FEM,
+    ALARM_SOURCE_SPREAD_M,
+    COVERAGE_THRESHOLD_PA,
 )
+
+FEM_AVAILABLE = True
 
 @dataclass
 class OptimizationResult:
@@ -21,16 +33,16 @@ class OptimizationResult:
     coverage_percentage: float
     sound_pressure_max: float
 
-def FDM_solve(obstacle_mask, alarm_positions):
-    source_strength = WAVE_SOURCE_STRENGTH
-    threshold = WAVE_THRESHOLD
+def FDM_solve(obstacle_mask, alarm_positions, debug=False):
+    source_strength = ALARM_SOURCE_STRENGTH_FDM
+    threshold = COVERAGE_THRESHOLD_PA
     n_steps = WAVE_STEPS
     warmup_steps = WAVE_WARMUP_STEPS
-    wave_speed = WAVE_SPEED
-    dt = WAVE_DT
-    dx = WAVE_DX
+    wave_speed = 343.0
+    dx = CELL_SIZE_M
+    dt = 0.00007
     gamma = WAVE_DAMPING
-    frequency = WAVE_FREQUENCY
+    frequency = ALARM_FREQUENCY_HZ
 
     # Finite difference method:
     # u_tt + gamma * u_t = c^2 * Laplacian(u) + f(x, y, t)
@@ -42,10 +54,16 @@ def FDM_solve(obstacle_mask, alarm_positions):
     u_prev = np.zeros((x_dim, y_dim))
     u_current = np.zeros((x_dim, y_dim))
 
+    if debug:
+        print(f"[FDM_solve] Testing positions: {alarm_positions}")
+
     valid_sources = []
     for x, y in alarm_positions:
         if 1 <= x < x_dim - 1 and 1 <= y < y_dim - 1 and not obstacle_mask[x, y]:
             valid_sources.append((x, y))
+
+    if debug:
+        print(f"[FDM_solve] Valid sources after filtering: {valid_sources} (grid {x_dim}x{y_dim})")
 
     Cx = wave_speed * dt / dx # Courant number
     Cx2 = Cx**2 # Stability condition for explicit scheme, must be <= 0.5
@@ -115,6 +133,137 @@ def FDM_solve(obstacle_mask, alarm_positions):
     return rms_map, coverage, sound_pressure_max
 
 
+def _obstacle_mask_to_wall_rectangles(obstacle_mask: np.ndarray):
+    x_dim, y_dim = obstacle_mask.shape
+    walls = []
+
+    for x in range(x_dim):
+        ys = np.flatnonzero(obstacle_mask[x, :])
+        if ys.size == 0:
+            continue
+
+        start = int(ys[0])
+        prev = int(ys[0])
+        for y in ys[1:]:
+            y = int(y)
+            if y != prev + 1:
+                walls.append((float(x), float(start), 1.0, float(prev - start + 1)))
+                start = y
+            prev = y
+
+        walls.append((float(x), float(start), 1.0, float(prev - start + 1)))
+
+    return walls
+
+
+def _fem_solve_subprocess(
+    obstacle_mask: np.ndarray,
+    alarm_positions: list[tuple[int, int]],
+    fem_nx: int,
+    fem_ny: int,
+) -> np.ndarray:
+    src_dir = Path(__file__).resolve().parent
+
+    with tempfile.TemporaryDirectory(prefix="fem_job_") as tmpdir:
+        input_path = Path(tmpdir) / "input.npz"
+        output_path = Path(tmpdir) / "output.npz"
+
+        np.savez_compressed(
+            input_path,
+            obstacle_mask=obstacle_mask,
+            alarm_positions=np.asarray(alarm_positions, dtype=np.int32),
+            fem_nx=np.asarray([int(fem_nx)], dtype=np.int32),
+            fem_ny=np.asarray([int(fem_ny)], dtype=np.int32),
+            threshold=np.asarray([float(COVERAGE_THRESHOLD_PA)], dtype=np.float64),
+            room_width_m=np.asarray([float(ROOM_WIDTH_M)], dtype=np.float64),
+            room_height_m=np.asarray([float(ROOM_HEIGHT_M)], dtype=np.float64),
+            alarm_frequency_hz=np.asarray([float(ALARM_FREQUENCY_HZ)], dtype=np.float64),
+            alarm_strength=np.asarray([float(ALARM_SOURCE_STRENGTH_FEM)], dtype=np.float64),
+            alarm_spread_m=np.asarray([float(ALARM_SOURCE_SPREAD_M)], dtype=np.float64),
+        )
+
+        env = os.environ.copy()
+        env.setdefault("OMP_NUM_THREADS", "1")
+        env.setdefault("OPENBLAS_NUM_THREADS", "1")
+        env.setdefault("MKL_NUM_THREADS", "1")
+        existing_pythonpath = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = (
+            f"{src_dir}:{existing_pythonpath}" if existing_pythonpath else str(src_dir)
+        )
+
+        cmd = [
+            sys.executable,
+            str(src_dir / "fem_worker.py"),
+            str(input_path),
+            str(output_path),
+        ]
+
+        proc = subprocess.run(
+            cmd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+
+        if proc.returncode != 0:
+            stderr = (proc.stderr or "").strip()
+            stdout = (proc.stdout or "").strip()
+            details = stderr if stderr else stdout
+            raise RuntimeError(f"FEM subprocess failed (exit {proc.returncode}): {details}")
+
+        if not output_path.exists():
+            raise RuntimeError("FEM subprocess did not produce output")
+
+        with np.load(output_path) as data:
+            return np.asarray(data["pressure_grid"], dtype=float)
+
+
+def FEM_solve(obstacle_mask, alarm_positions):
+    if not FEM_AVAILABLE:
+        raise RuntimeError(
+            "FEM solver is unavailable. Install FEniCSx dependencies (dolfinx, ufl, mpi4py, petsc4py)."
+        )
+
+    x_dim, y_dim = obstacle_mask.shape
+    free_mask = ~obstacle_mask
+
+    walls = _obstacle_mask_to_wall_rectangles(obstacle_mask)
+
+    fem_nx = GRID_CELLS_X
+    fem_ny = GRID_CELLS_Y
+
+    pressure_grid = _fem_solve_subprocess(
+        obstacle_mask=obstacle_mask,
+        alarm_positions=list(alarm_positions),
+        fem_nx=fem_nx,
+        fem_ny=fem_ny,
+    )
+
+    # FEM grid is (y, x). Convert to project convention (x, y).
+    fem_map = np.abs(pressure_grid.T)
+
+    if fem_map.shape != obstacle_mask.shape:
+        x_idx = np.linspace(0, fem_map.shape[0] - 1, x_dim)
+        y_idx = np.linspace(0, fem_map.shape[1] - 1, y_dim)
+        x_nn = np.round(x_idx).astype(int)
+        y_nn = np.round(y_idx).astype(int)
+        fem_map = fem_map[np.ix_(x_nn, y_nn)]
+
+    covered_mask = (fem_map >= COVERAGE_THRESHOLD_PA) & free_mask
+    free_cells = int(np.count_nonzero(free_mask))
+    covered_cells = int(np.count_nonzero(covered_mask))
+    coverage = (100.0 * covered_cells / free_cells) if free_cells else 0.0
+
+    if np.any(free_mask):
+        sound_pressure_max = float(np.max(fem_map[free_mask]))
+    else:
+        sound_pressure_max = 0.0
+
+    return fem_map, coverage, sound_pressure_max
+
+
 def build_candidate_points(obstacle_mask, spacing):
     x_dim, y_dim = obstacle_mask.shape
     free_cells = np.argwhere(~obstacle_mask)
@@ -157,11 +306,31 @@ def build_domain(candidates, n_alarms, domain_limit, rng):
     return alarm_layouts
 
 
-def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=350, init_samples=8):
+def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=350, init_samples=8, solver="FDM", debug=False):
     rng = np.random.default_rng(None)
+
+    solver_name = str(solver).upper()
+    if solver_name not in ("FDM", "FEM"):
+        raise ValueError(f"Unsupported solver '{solver}'. Choose 'FDM' or 'FEM'.")
+
+    if solver_name == "FEM":
+        # Keep FEM optimization responsive enough for UI interaction.
+        candidate_spacing = max(candidate_spacing, 18)
+        domain_limit = min(domain_limit, 80)
+        init_samples = min(init_samples, 6)
 
     # Returnerer gyldige alarmplasseringer og minimumsavstand mellom alarmer (redusere området den må søke i)
     candidates = build_candidate_points(obstacle_mask, candidate_spacing)
+
+    if debug:
+        print(
+            "[DEBUG] Starting optimization: "
+            f"solver={solver_name}, n_alarms={n_alarms}, candidate_spacing={candidate_spacing}, "
+            f"domain_limit={domain_limit}, init_samples={init_samples}, candidate_count={len(candidates)}"
+        )
+
+    optimization_start = time.perf_counter()
+    iterations = 0
 
     if len(candidates) < n_alarms:
         raise ValueError("Not enough valid candidate cells to place the requested number of alarms.")
@@ -175,19 +344,61 @@ def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=3
         if layout_key in cache:
             return cache[layout_key][0]
 
-        sound_pressure, coverage, max_sound_pressure = FDM_solve(obstacle_mask, alarm_positions=list(layout_key))
+        if solver_name == "FEM":
+            sound_pressure, coverage, max_sound_pressure = FEM_solve(
+                obstacle_mask,
+                alarm_positions=list(layout_key),
+            )
+        else:
+            sound_pressure, coverage, max_sound_pressure = FDM_solve(
+                obstacle_mask,
+                alarm_positions=list(layout_key),
+                debug=debug,
+            )
         cache[layout_key] = (coverage, sound_pressure, max_sound_pressure)
         return coverage
 
-    init_count = min(max(1, init_samples), len(candidate_layouts))
-    x_init = candidate_layouts[rng.choice(len(candidate_layouts), size=init_count, replace=False)]
+    if solver_name == "FEM":
+        # Evaluate each candidate directly with FEM to keep comparison faithful
+        # while avoiding sklearn/OpenMP interaction in this runtime stack.
+        best_key = None
+        best_coverage = -np.inf
+        for candidate in candidate_layouts:
+            iterations += 1
+            coverage = objective(candidate)
+            key = tuple(sorted_alarm_positions(candidate, n_alarms))
+            if coverage > best_coverage:
+                best_coverage = coverage
+                best_key = key
 
-    layout_samples, coverage_samples, _ = loop(x_init=x_init, sim_func=objective, acq_func=expected_improvement, domain=candidate_layouts)
+        if best_key is None:
+            raise RuntimeError("No valid FEM candidates were evaluated")
+    else:
+        from optimalisering2d import expected_improvement, loop
 
-    best_idx = int(np.argmax(coverage_samples)) # Get the index of the best alarm layout found by the optimization loop.
-    alarm_positions = sorted_alarm_positions(layout_samples[best_idx], n_alarms)
-    best_key = tuple(alarm_positions)
+        init_count = min(max(1, init_samples), len(candidate_layouts))
+        x_init = candidate_layouts[rng.choice(len(candidate_layouts), size=init_count, replace=False)]
+
+        layout_samples, coverage_samples, _ = loop(
+            x_init=x_init,
+            sim_func=objective,
+            acq_func=expected_improvement,
+            domain=candidate_layouts,
+            debug=debug,
+        )
+
+        iterations = max(0, int(layout_samples.shape[0] - init_count))
+
+        best_idx = int(np.argmax(coverage_samples)) # Get the index of the best alarm layout found by the optimization loop.
+        alarm_positions = sorted_alarm_positions(layout_samples[best_idx], n_alarms)
+        best_key = tuple(alarm_positions)
 
     coverage, sound_pressure, max_sound_pressure = cache[best_key]
+
+    if debug:
+        elapsed_s = time.perf_counter() - optimization_start
+        print(f"[DEBUG] Optimization finished: iterations={iterations}, elapsed_s={elapsed_s:.3f}")
+
+    alarm_positions = list(best_key)
 
     return OptimizationResult(alarm_positions, sound_pressure, coverage, max_sound_pressure)

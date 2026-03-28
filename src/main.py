@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import argparse
 from concurrent.futures import ThreadPoolExecutor
 from buttons import *
 from config import *
@@ -8,7 +9,21 @@ from FEM import FEM_draw, FEM_setup
 from rooms import draw_room, room_showcase, rooms
 from room_optimization import optimize_alarms
 
-def main():
+
+def selected_solver(ui: Menu) -> str:
+    return "FEM" if ui.fem_solver_toggle.value == 0 else "FDM"
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Fire alarm simulation")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug prints for Bayesian optimization details.",
+    )
+    return parser.parse_args()
+
+
+def main(debug=False):
     # Initialize Pygame
     pygame.init()
     SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.get_desktop_sizes()[0]
@@ -26,6 +41,7 @@ def main():
     number_values = [0.0, 0.0]  # List to hold values for updating the UI
     calculating = False
     previous_calculate_state = ui.calculate_button.state
+    previous_solver = selected_solver(ui)
     room_result = None # Returned by the optimization function,
     # Should contain the sound_pressure, alarm positions, coverage and maybe other stuff that has been calculated
     optimization_pool = ThreadPoolExecutor(max_workers=1)
@@ -67,10 +83,23 @@ def main():
                 sound_pressure_max = 0.0
                 ui.room_choice.number_value_past = ui.room_choice.number_value
 
+            current_solver = selected_solver(ui)
+            if current_solver != previous_solver:
+                room_result = None
+                coverage_percentage = 0.0
+                sound_pressure_max = 0.0
+                previous_solver = current_solver
+
             if calculating and optimization_task is not None and optimization_task.done():
-                room_result = optimization_task.result()
-                coverage_percentage = room_result.coverage_percentage
-                sound_pressure_max = room_result.sound_pressure_max
+                try:
+                    room_result = optimization_task.result()
+                    coverage_percentage = room_result.coverage_percentage
+                    sound_pressure_max = room_result.sound_pressure_max
+                except Exception as exc:
+                    print(f"Calculation failed ({current_solver}): {exc}")
+                    room_result = None
+                    coverage_percentage = 0.0
+                    sound_pressure_max = 0.0
 
                 calculating = False
                 ui.calculate_button.set_state(False)
@@ -82,8 +111,38 @@ def main():
                 room_choice = ui.room_choice.number_value if ui.room_choice.number_value in rooms else 1
                 obstacle_mask = rooms[room_choice]
 
-                # Optimization sketch:
-                optimization_task = optimization_pool.submit(optimize_alarms, obstacle_mask, alarm_count)
+                # PETSc/FEniCSx is not safe in this background thread setup.
+                # Keep async optimization for FDM, but run FEM synchronously.
+                if current_solver == "FEM":
+                    assert selected_solver(ui) == "FEM", "FEM run requested without FEM selection"
+                    assert ui.selected_solver_name == "FEM", "UI solver state mismatch before FEM run"
+                    print("Running FEM solver after FEM button selection")
+                    try:
+                        room_result = optimize_alarms(
+                            obstacle_mask,
+                            alarm_count,
+                            solver=current_solver,
+                            debug=debug,
+                        )
+                        coverage_percentage = room_result.coverage_percentage
+                        sound_pressure_max = room_result.sound_pressure_max
+                    except Exception as exc:
+                        print(f"Calculation failed ({current_solver}): {exc}")
+                        room_result = None
+                        coverage_percentage = 0.0
+                        sound_pressure_max = 0.0
+
+                    calculating = False
+                    ui.calculate_button.set_state(False)
+                    optimization_task = None
+                else:
+                    optimization_task = optimization_pool.submit(
+                        optimize_alarms,
+                        obstacle_mask,
+                        alarm_count,
+                        solver=current_solver,
+                        debug=debug,
+                    )
 
             if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
                 # Reset results when alarm count changes.
@@ -122,4 +181,5 @@ def main():
     pygame.quit()
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(debug=args.debug)

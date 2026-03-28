@@ -24,6 +24,11 @@ class Menu:
         self.room_choice = InputBox(0, 0, 0, 0, 'Room number:', 1, 1, ROOM_NR_MAX)
         self.calculate_button = Switch(0, 0, 0, 0, 'Calculating...', 'Calculate', TOGGLE_OFF, GREEN, False)
         self.coverage_percentage_room = NumberDisplay(0, 0, 140, 30, 'Coverage:')
+        self.fdm_solver_toggle = Toggle(0, 0, 0, 0, 'FDM', 'FDM', True, 0)
+        self.fem_solver_toggle = Toggle(0, 0, 0, 0, 'FEM', 'FEM', False, 1)
+        self.selected_solver_name = "FDM"
+        self._solver_toggle_delay = 0.25
+        self._solver_toggle_time = self._solver_toggle_delay
 
         # Set positions based on initial screen size
         self.update_layout(screen_width, screen_height)
@@ -49,6 +54,8 @@ class Menu:
         self.room_choice.rect_label.update(screen_width // 2, menu_y + self.menu_height // 2, 150, self.menu_height // 2)
         self.room_choice.rect.update(screen_width // 2 + 150, menu_y + self.menu_height // 2, 150*0.5, self.menu_height // 2)
         self.calculate_button.rect.update(screen_width // 2 + 240, menu_y, 150, self.menu_height)
+        self.fdm_solver_toggle.rect.update(screen_width // 2 + 400, menu_y, 90, self.menu_height // 2)
+        self.fem_solver_toggle.rect.update(screen_width // 2 + 400, menu_y + self.menu_height // 2, 90, self.menu_height // 2)
 
         # Coverage and potential displays (top left)
         self.coverage_percentage_room.rect_label.update(0, self.menu_height//12, 140, self.menu_height // 2)
@@ -86,9 +93,12 @@ class Menu:
             self.alarm_amount_room.draw(screen)
             self.room_choice.draw(screen)
             self.calculate_button.draw(screen)
+            self.fdm_solver_toggle.draw(screen)
+            self.fem_solver_toggle.draw(screen)
             self.coverage_percentage_room.draw(screen, "%")
 
     def update(self, dt, value):
+        self._solver_toggle_time += dt
         self.quit_button.update(dt)
         self.pause_button.update(dt)
         self.room_toggle.update(dt)
@@ -97,10 +107,36 @@ class Menu:
         if self.room_toggle.state and self.room_toggle.value ==0:
             self.floor_toggle.value = 1
             self.coverage_percentage_room.update(value[0])
+            self._update_solver_selection()
 
         self.floor_toggle.update(dt)
         if self.floor_toggle.state and self.floor_toggle.value ==0:
             self.room_toggle.value = 1
+
+    def _update_solver_selection(self):
+        left_click = pygame.mouse.get_pressed()[0]
+        mouse_pos = pygame.mouse.get_pos()
+
+        if left_click and self._solver_toggle_time >= self._solver_toggle_delay:
+            clicked_fdm = self.fdm_solver_toggle.rect.collidepoint(mouse_pos)
+            clicked_fem = self.fem_solver_toggle.rect.collidepoint(mouse_pos)
+
+            if clicked_fdm:
+                self.selected_solver_name = "FDM"
+                self._solver_toggle_time = 0.0
+                print('Solver toggle clicked: FDM selected')
+            elif clicked_fem:
+                self.selected_solver_name = "FEM"
+                self._solver_toggle_time = 0.0
+                print('Solver toggle clicked: FEM selected')
+
+        # Keep visual toggle state in sync with the selected solver.
+        self.fdm_solver_toggle.value = 0 if self.selected_solver_name == "FDM" else 1
+        self.fem_solver_toggle.value = 0 if self.selected_solver_name == "FEM" else 1
+        self.fdm_solver_toggle.state = self.fdm_solver_toggle.value == 0
+        self.fem_solver_toggle.state = self.fem_solver_toggle.value == 0
+        self.fdm_solver_toggle.color = TOGGLE_ON if self.fdm_solver_toggle.state else TOGGLE_OFF
+        self.fem_solver_toggle.color = TOGGLE_ON if self.fem_solver_toggle.state else TOGGLE_OFF
 
     # Handle events for input boxes
     def handle_event(self, event):
