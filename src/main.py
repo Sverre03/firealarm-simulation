@@ -1,3 +1,4 @@
+import argparse
 import pygame
 import numpy as np
 import argparse
@@ -13,17 +14,9 @@ from room_optimization import optimize_alarms
 def selected_solver(ui: Menu) -> str:
     return "FEM" if ui.fem_solver_toggle.value == 0 else "FDM"
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Fire alarm simulation")
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug prints for Bayesian optimization details.",
-    )
-    return parser.parse_args()
 
 
-def main(debug=False):
+def main(debug_optimization=False):
     # Initialize Pygame
     pygame.init()
     SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.get_desktop_sizes()[0]
@@ -122,7 +115,7 @@ def main(debug=False):
                             obstacle_mask,
                             alarm_count,
                             solver=current_solver,
-                            debug=debug,
+                            debug=debug_optimization,
                         )
                         coverage_percentage = room_result.coverage_percentage
                         sound_pressure_max = room_result.sound_pressure_max
@@ -141,7 +134,7 @@ def main(debug=False):
                         obstacle_mask,
                         alarm_count,
                         solver=current_solver,
-                        debug=debug,
+                        debug=debug_optimization,
                     )
 
             if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
@@ -181,5 +174,11 @@ def main(debug=False):
     pygame.quit()
 
 if __name__ == "__main__":
-    args = parse_args()
-    main(debug=args.debug)
+    parser = argparse.ArgumentParser(description="Fire Alarm Simulation")
+    parser.add_argument(
+        "--debug-optimization",
+        action="store_true",
+        help="Print optimization loop debug output.",
+    )
+    args = parser.parse_args()
+    main(debug_optimization=args.debug_optimization)
