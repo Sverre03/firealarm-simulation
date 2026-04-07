@@ -4,21 +4,15 @@ import time
 import numpy as np
 
 from config import (
+    WAVE_SOURCE_STRENGTH,
     WAVE_THRESHOLD,
     WAVE_STEPS,
     WAVE_WARMUP_STEPS,
     WAVE_DAMPING,
-    ROOM_WIDTH_M,
-    ROOM_HEIGHT_M,
-    GRID_CELLS_X,
-    GRID_CELLS_Y,
-    CELL_SIZE_M,
-    ALARM_FREQUENCY_HZ,
-    ALARM_RMS_PRESSURE_PA,
-    ALARM_SOURCE_STRENGTH_FDM,
-    ALARM_SOURCE_STRENGTH_FEM,
-    ALARM_SOURCE_SPREAD_M,
-    COVERAGE_THRESHOLD_PA,
+    WAVE_SPEED,
+    WAVE_DT,
+    WAVE_DX,
+    WAVE_FREQUENCY,
 )
 
 def _check_fem_available() -> bool:
@@ -39,15 +33,15 @@ class OptimizationResult:
     sound_pressure_max: float
 
 def FDM_solve(obstacle_mask, alarm_positions, debug=False):
-    source_strength = ALARM_SOURCE_STRENGTH_FDM
-    threshold = COVERAGE_THRESHOLD_PA
+    source_strength = WAVE_SOURCE_STRENGTH
+    threshold = WAVE_THRESHOLD
     n_steps = WAVE_STEPS
     warmup_steps = WAVE_WARMUP_STEPS
-    wave_speed = 343.0
-    dx = CELL_SIZE_M
-    dt = 0.00007
+    wave_speed = WAVE_SPEED
+    dx = WAVE_DX
+    dt = WAVE_DT
     gamma = WAVE_DAMPING
-    frequency = ALARM_FREQUENCY_HZ
+    frequency = WAVE_FREQUENCY
 
     # Finite difference method:
     # u_tt + gamma * u_t = c^2 * Laplacian(u) + f(x, y, t)
@@ -165,6 +159,8 @@ def _calibrate_fem_map_to_reference_spl(
     fem_map: np.ndarray,
     obstacle_mask: np.ndarray,
     alarm_positions: list[tuple[int, int]],
+    cell_size_x: float,
+    cell_size_y: float,
 ) -> np.ndarray:
     if fem_map.size == 0 or len(alarm_positions) == 0:
         return fem_map
@@ -174,12 +170,10 @@ def _calibrate_fem_map_to_reference_spl(
         return fem_map
 
     x_dim, y_dim = fem_map.shape
-    cell_size_x = ROOM_WIDTH_M / float(max(1, x_dim))
-    cell_size_y = ROOM_HEIGHT_M / float(max(1, y_dim))
 
     # Sample a thin annulus around 1 m from each alarm and scale FEM pressure
-    # so this region matches the configured RMS pressure reference.
-    target_pa = float(ALARM_RMS_PRESSURE_PA)
+    # so this region matches the same source level used in FDM.
+    target_pa = float(WAVE_SOURCE_STRENGTH)
     if target_pa <= 0.0:
         return fem_map
 
@@ -237,11 +231,13 @@ def FEM_solve(obstacle_mask, alarm_positions):
 
     walls = _obstacle_mask_to_wall_rectangles(obstacle_mask)
 
-    fem_nx = GRID_CELLS_X
-    fem_ny = GRID_CELLS_Y
+    fem_nx = x_dim
+    fem_ny = y_dim
 
-    cell_size_x = ROOM_WIDTH_M / float(max(1, x_dim))
-    cell_size_y = ROOM_HEIGHT_M / float(max(1, y_dim))
+    cell_size_x = float(WAVE_DX)
+    cell_size_y = float(WAVE_DX)
+    room_width = float(fem_nx) * cell_size_x
+    room_height = float(fem_ny) * cell_size_y
 
     walls_m = [
         (
@@ -257,21 +253,21 @@ def FEM_solve(obstacle_mask, alarm_positions):
         PointSource(
             x=(float(x) + 0.5) * cell_size_x,
             y=(float(y) + 0.5) * cell_size_y,
-            strength=float(ALARM_SOURCE_STRENGTH_FEM),
-            spread=float(ALARM_SOURCE_SPREAD_M),
+            strength=float(WAVE_SOURCE_STRENGTH),
+            spread=float(0.2 * WAVE_DX),
         )
         for x, y in list(alarm_positions)
     ]
 
     _, _, _, pressure_grid, _ = solve_fire_alarm_intensity_map(
-        room_width=float(ROOM_WIDTH_M),
-        room_height=float(ROOM_HEIGHT_M),
+        room_width=room_width,
+        room_height=room_height,
         nx=int(fem_nx),
         ny=int(fem_ny),
         alarms=alarms,
         walls=walls_m,
-        frequency_hz=float(ALARM_FREQUENCY_HZ),
-        threshold=float(COVERAGE_THRESHOLD_PA),
+        frequency_hz=float(WAVE_FREQUENCY),
+        threshold=float(WAVE_THRESHOLD),
     )
 
     # FEM grid is (y, x). Convert to project convention (x, y).
@@ -288,9 +284,11 @@ def FEM_solve(obstacle_mask, alarm_positions):
         fem_map=fem_map,
         obstacle_mask=obstacle_mask,
         alarm_positions=list(alarm_positions),
+        cell_size_x=cell_size_x,
+        cell_size_y=cell_size_y,
     )
 
-    covered_mask = (fem_map >= COVERAGE_THRESHOLD_PA) & free_mask
+    covered_mask = (fem_map >= WAVE_THRESHOLD) & free_mask
     free_cells = int(np.count_nonzero(free_mask))
     covered_cells = int(np.count_nonzero(covered_mask))
     coverage = (100.0 * covered_cells / free_cells) if free_cells else 0.0

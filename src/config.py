@@ -37,23 +37,3 @@ WAVE_FREQUENCY = 0.10
 OBSTACLE_REFLECTIVITY = 0.85
 OBSTACLE_ABSORPTION = 0.15
 
-# Shared physical setup for both FDM and FEM (kept identical for comparability).
-ROOM_WIDTH_M = 10.0
-ROOM_HEIGHT_M = 7.5
-GRID_CELLS_X = 200
-GRID_CELLS_Y = 150
-CELL_SIZE_M = ROOM_WIDTH_M / GRID_CELLS_X
-
-# Typical fire alarm tone is around 3 kHz at high SPL near source.
-ALARM_FREQUENCY_HZ = 3000.0
-ALARM_SPL_AT_1M_DB = 90.0
-REF_PRESSURE_PA = 2.0e-5
-ALARM_RMS_PRESSURE_PA = REF_PRESSURE_PA * (10.0 ** (ALARM_SPL_AT_1M_DB / 20.0))
-
-# Source scaling used by numerical models.
-ALARM_SOURCE_STRENGTH_FDM = 2.0e5
-ALARM_SOURCE_STRENGTH_FEM = ALARM_RMS_PRESSURE_PA
-ALARM_SOURCE_SPREAD_M = 0.20
-
-# Shared pressure threshold for "covered" regions (~70 dB).
-COVERAGE_THRESHOLD_PA = REF_PRESSURE_PA * (10.0 ** (70.0 / 20.0))
