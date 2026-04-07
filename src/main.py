@@ -1,3 +1,4 @@
+import argparse
 import pygame
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
@@ -8,7 +9,7 @@ from FEM import FEM_draw, FEM_setup
 from rooms import draw_room, room_showcase, rooms
 from room_optimization import optimize_alarms
 
-def main():
+def main(debug_optimization=False):
     # Initialize Pygame
     pygame.init()
     SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.get_desktop_sizes()[0]
@@ -83,7 +84,12 @@ def main():
                 obstacle_mask = rooms[room_choice]
 
                 # Optimization sketch:
-                optimization_task = optimization_pool.submit(optimize_alarms, obstacle_mask, alarm_count)
+                optimization_task = optimization_pool.submit(
+                    optimize_alarms,
+                    obstacle_mask,
+                    alarm_count,
+                    debug=debug_optimization,
+                )
 
             if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
                 # Reset results when alarm count changes.
@@ -122,4 +128,11 @@ def main():
     pygame.quit()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Fire Alarm Simulation")
+    parser.add_argument(
+        "--debug-optimization",
+        action="store_true",
+        help="Print optimization loop debug output.",
+    )
+    args = parser.parse_args()
+    main(debug_optimization=args.debug_optimization)

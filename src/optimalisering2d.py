@@ -5,10 +5,16 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 import copy
 
 #tar ikke høyde for symmetrien i at opt(x1,x2,x3) = opt(x2,x3,x1) osv
-def loop(x_init, sim_func,  acq_func, domain, tol=1e-2,  debug=False, save_interval=1, max_iterations=1000): 
+def loop(x_init, sim_func,  acq_func, domain, tol=1e-3,  debug=False, save_interval=1, max_iterations=1000): 
+    log_sim = lambda x: np.maximum(np.log(sim_func(x)), 1e-8)
     X_samples = np.atleast_2d(np.asarray(x_init, dtype=float))
-    Y_samples = np.array([sim_func(x) for x in X_samples], dtype=float)
+    Y_samples = np.array([log_sim(x) for x in X_samples], dtype=float)
 
+    if save_interval is None:
+        should_save = lambda i: False
+    else:
+        should_save = lambda i: (i % save_interval == 0)
+    
     history = {
         "gpr": [],
         "acq_values": [],
@@ -23,24 +29,27 @@ def loop(x_init, sim_func,  acq_func, domain, tol=1e-2,  debug=False, save_inter
 
     while acq_max > tol and iteration < max_iterations:
         iteration += 1
+        
+        should_save_now = should_save(iteration)
+
         gpr.fit(X_samples, Y_samples)
-        if iteration % history["save_interval"] == 0:
+        if should_save_now:
             history["gpr"].append(copy.deepcopy(gpr))
 
         mu, sigma = gpr.predict(domain, return_std=True)
         current_acq = acq_func(mu, sigma, float(np.max(Y_samples)))
         current_acq = np.where(np.isnan(current_acq), -np.inf, current_acq)
 
-        if iteration % history["save_interval"] == 0:
+        if should_save_now:
             history["acq_values"].append(current_acq)
 
         idx_next = int(np.argmax(current_acq))
         x_next = domain[idx_next]
         acq_max = float(current_acq[idx_next])
 
-        score_next = float(sim_func(x_next))
+        score_next = float(log_sim(x_next))
 
-        if iteration % history["save_interval"] == 0:
+        if should_save_now:
             history["x_next"].append(x_next)
 
         X_samples = np.vstack((X_samples, x_next.reshape(1,-1)))

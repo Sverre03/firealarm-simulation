@@ -157,7 +157,7 @@ def build_domain(candidates, n_alarms, domain_limit, rng):
     return alarm_layouts
 
 
-def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=350, init_samples=8):
+def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=350, init_samples=8, debug=False):
     rng = np.random.default_rng(None)
 
     # Returnerer gyldige alarmplasseringer og minimumsavstand mellom alarmer (redusere området den må søke i)
@@ -182,7 +182,14 @@ def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=3
     init_count = min(max(1, init_samples), len(candidate_layouts))
     x_init = candidate_layouts[rng.choice(len(candidate_layouts), size=init_count, replace=False)]
 
-    layout_samples, coverage_samples, _ = loop(x_init=x_init, sim_func=objective, acq_func=expected_improvement, domain=candidate_layouts)
+    layout_samples, coverage_samples, _ = loop(
+        x_init=x_init,
+        sim_func=objective,
+        acq_func=expected_improvement,
+        domain=candidate_layouts,
+        debug=debug,
+        save_interval = None
+    )
 
     best_idx = int(np.argmax(coverage_samples)) # Get the index of the best alarm layout found by the optimization loop.
     alarm_positions = sorted_alarm_positions(layout_samples[best_idx], n_alarms)
