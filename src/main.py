@@ -16,7 +16,7 @@ def selected_solver(ui: Menu) -> str:
 
 
 
-def main(debug_optimization=False):
+def main(debug_optimization=False, fast_optimization=False):
     # Initialize Pygame
     pygame.init()
     SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.get_desktop_sizes()[0]
@@ -121,6 +121,7 @@ def main(debug_optimization=False):
                             alarm_count,
                             solver=current_solver,
                             debug=debug_optimization,
+                            fast_optimization=fast_optimization,
                         )
                         coverage_percentage = room_result.coverage_percentage
                         sound_pressure_max = room_result.sound_pressure_max
@@ -140,6 +141,7 @@ def main(debug_optimization=False):
                         alarm_count,
                         solver=current_solver,
                         debug=debug_optimization,
+                        fast_optimization=fast_optimization,
                     )
 
             if ui.alarm_amount_room.number_value != ui.alarm_amount_room.number_value_past: 
@@ -185,5 +187,10 @@ if __name__ == "__main__":
         action="store_true",
         help="Print optimization loop debug output.",
     )
+    parser.add_argument(
+        "--fast-optimization",
+        action="store_true",
+        help="Use a much smaller search budget so optimization finishes faster.",
+    )
     args = parser.parse_args()
-    main(debug_optimization=args.debug_optimization)
+    main(debug_optimization=args.debug_optimization, fast_optimization=args.fast_optimization)

@@ -5,8 +5,8 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 import copy
 
 #tar ikke høyde for symmetrien i at opt(x1,x2,x3) = opt(x2,x3,x1) osv
-def loop(x_init, sim_func,  acq_func, domain, tol=1e-3,  debug=False, save_interval=1, max_iterations=1000): 
-    log_sim = lambda x: np.maximum(np.log(sim_func(x)), 1e-8)
+def loop(x_init, sim_func,  acq_func, domain, tol=1e-3,  debug=False, save_interval=None, max_iterations=1000): 
+    log_sim = lambda x: np.log(np.maximum(sim_func(x), 1e-8))
     X_samples = np.atleast_2d(np.asarray(x_init, dtype=float))
     Y_samples = np.array([log_sim(x) for x in X_samples], dtype=float)
 
@@ -21,7 +21,6 @@ def loop(x_init, sim_func,  acq_func, domain, tol=1e-3,  debug=False, save_inter
         "x_next": [],
         "save_interval": save_interval,
     }
-    log_sim = lambda x: np.log(np.maximum(sim_func(x), 1e-8))
     gpr = GaussianProcessRegressor(kernel=Matern(nu=2.5), normalize_y=True)
 
     acq_max = np.inf

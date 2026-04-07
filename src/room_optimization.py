@@ -14,6 +14,7 @@ from config import (
     GRID_CELLS_Y,
     CELL_SIZE_M,
     ALARM_FREQUENCY_HZ,
+    ALARM_RMS_PRESSURE_PA,
     ALARM_SOURCE_STRENGTH_FDM,
     ALARM_SOURCE_STRENGTH_FEM,
     ALARM_SOURCE_SPREAD_M,
@@ -160,6 +161,64 @@ def _obstacle_mask_to_wall_rectangles(obstacle_mask: np.ndarray):
     return walls
 
 
+def _calibrate_fem_map_to_reference_spl(
+    fem_map: np.ndarray,
+    obstacle_mask: np.ndarray,
+    alarm_positions: list[tuple[int, int]],
+) -> np.ndarray:
+    if fem_map.size == 0 or len(alarm_positions) == 0:
+        return fem_map
+
+    free_mask = ~obstacle_mask
+    if not np.any(free_mask):
+        return fem_map
+
+    x_dim, y_dim = fem_map.shape
+    cell_size_x = ROOM_WIDTH_M / float(max(1, x_dim))
+    cell_size_y = ROOM_HEIGHT_M / float(max(1, y_dim))
+
+    # Sample a thin annulus around 1 m from each alarm and scale FEM pressure
+    # so this region matches the configured RMS pressure reference.
+    target_pa = float(ALARM_RMS_PRESSURE_PA)
+    if target_pa <= 0.0:
+        return fem_map
+
+    near_values = []
+    ring_inner = 0.75
+    ring_outer = 1.25
+
+    for ax, ay in alarm_positions:
+        for x in range(x_dim):
+            dx_m = (float(x) - float(ax)) * cell_size_x
+            for y in range(y_dim):
+                if not free_mask[x, y]:
+                    continue
+                dy_m = (float(y) - float(ay)) * cell_size_y
+                r = float(np.hypot(dx_m, dy_m))
+                if ring_inner <= r <= ring_outer:
+                    near_values.append(float(fem_map[x, y]))
+
+    if not near_values:
+        # Fallback if the 1 m ring has no valid cells in this layout.
+        for ax, ay in alarm_positions:
+            for x in range(max(0, ax - 2), min(x_dim, ax + 3)):
+                for y in range(max(0, ay - 2), min(y_dim, ay + 3)):
+                    if free_mask[x, y]:
+                        near_values.append(float(fem_map[x, y]))
+
+    if not near_values:
+        return fem_map
+
+    current_ref = float(np.median(np.maximum(np.asarray(near_values, dtype=float), 1.0e-15)))
+    if current_ref <= 0.0:
+        return fem_map
+
+    scale = target_pa / current_ref
+    # Keep scaling bounded to avoid pathological spikes from unusual geometry.
+    scale = float(np.clip(scale, 1.0e-3, 1.0e6))
+    return fem_map * scale
+
+
 def FEM_solve(obstacle_mask, alarm_positions):
     if not FEM_AVAILABLE:
         raise RuntimeError(
@@ -225,6 +284,12 @@ def FEM_solve(obstacle_mask, alarm_positions):
         y_nn = np.round(y_idx).astype(int)
         fem_map = fem_map[np.ix_(x_nn, y_nn)]
 
+    fem_map = _calibrate_fem_map_to_reference_spl(
+        fem_map=fem_map,
+        obstacle_mask=obstacle_mask,
+        alarm_positions=list(alarm_positions),
+    )
+
     covered_mask = (fem_map >= COVERAGE_THRESHOLD_PA) & free_mask
     free_cells = int(np.count_nonzero(free_mask))
     covered_cells = int(np.count_nonzero(covered_mask))
@@ -280,7 +345,16 @@ def build_domain(candidates, n_alarms, domain_limit, rng):
     return alarm_layouts
 
 
-def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=350, init_samples=8, solver="FDM", debug=False):
+def optimize_alarms(
+    obstacle_mask,
+    n_alarms,
+    candidate_spacing=8,
+    domain_limit=350,
+    init_samples=8,
+    solver="FDM",
+    debug=False,
+    fast_optimization=False,
+):
     rng = np.random.default_rng(None)
 
     solver_name = str(solver).upper()
@@ -292,11 +366,16 @@ def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=3
             print("[DEBUG] FEM dependencies unavailable; falling back to FDM.")
         solver_name = "FDM"
 
+    if fast_optimization:
+        candidate_spacing = max(candidate_spacing, 20)
+        domain_limit = min(domain_limit, 40)
+        init_samples = min(init_samples, 4)
+
     if solver_name == "FEM":
         # Keep FEM optimization responsive enough for UI interaction.
-        candidate_spacing = max(candidate_spacing, 18)
-        domain_limit = min(domain_limit, 80)
-        init_samples = min(init_samples, 6)
+        candidate_spacing = max(candidate_spacing, 24 if fast_optimization else 18)
+        domain_limit = min(domain_limit, 25 if fast_optimization else 80)
+        init_samples = min(init_samples, 3 if fast_optimization else 6)
 
     # Returnerer gyldige alarmplasseringer og minimumsavstand mellom alarmer (redusere området den må søke i)
     candidates = build_candidate_points(obstacle_mask, candidate_spacing)
