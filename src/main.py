@@ -8,7 +8,7 @@ from config import *
 from ui import *
 from FEM import FEM_draw, FEM_setup
 from rooms import draw_room, room_showcase, rooms
-from room_optimization import optimize_alarms
+from room_optimization import FEM_AVAILABLE, optimize_alarms
 
 
 def selected_solver(ui: Menu) -> str:
@@ -26,6 +26,8 @@ def main(debug_optimization=False):
     pygame.display.set_caption("Fire Alarm Simulation")
 
     ui = Menu(0, SCREEN_HEIGHT - SCREEN_HEIGHT*MENU_HEIGHT_MULTI, SCREEN_WIDTH, SCREEN_HEIGHT, DARK_GREY, '')
+    if not FEM_AVAILABLE:
+        print("FEM dependencies not found; using FDM solver.")
 
     # Main loop
     running = True
@@ -77,6 +79,9 @@ def main(debug_optimization=False):
                 ui.room_choice.number_value_past = ui.room_choice.number_value
 
             current_solver = selected_solver(ui)
+            if current_solver == "FEM" and not FEM_AVAILABLE:
+                ui.selected_solver_name = "FDM"
+                current_solver = "FDM"
             if current_solver != previous_solver:
                 room_result = None
                 coverage_percentage = 0.0

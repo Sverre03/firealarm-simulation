@@ -1,9 +1,5 @@
 from dataclasses import dataclass
-import os
-from pathlib import Path
-import subprocess
-import sys
-import tempfile
+import importlib
 import time
 import numpy as np
 
@@ -24,7 +20,15 @@ from config import (
     COVERAGE_THRESHOLD_PA,
 )
 
-FEM_AVAILABLE = True
+def _check_fem_available() -> bool:
+    try:
+        importlib.import_module("fem_fire_alarm_coverage")
+        return True
+    except Exception:
+        return False
+
+
+FEM_AVAILABLE = _check_fem_available()
 
 @dataclass
 class OptimizationResult:
@@ -156,75 +160,18 @@ def _obstacle_mask_to_wall_rectangles(obstacle_mask: np.ndarray):
     return walls
 
 
-def _fem_solve_subprocess(
-    obstacle_mask: np.ndarray,
-    alarm_positions: list[tuple[int, int]],
-    fem_nx: int,
-    fem_ny: int,
-) -> np.ndarray:
-    src_dir = Path(__file__).resolve().parent
-
-    with tempfile.TemporaryDirectory(prefix="fem_job_") as tmpdir:
-        input_path = Path(tmpdir) / "input.npz"
-        output_path = Path(tmpdir) / "output.npz"
-
-        np.savez_compressed(
-            input_path,
-            obstacle_mask=obstacle_mask,
-            alarm_positions=np.asarray(alarm_positions, dtype=np.int32),
-            fem_nx=np.asarray([int(fem_nx)], dtype=np.int32),
-            fem_ny=np.asarray([int(fem_ny)], dtype=np.int32),
-            threshold=np.asarray([float(COVERAGE_THRESHOLD_PA)], dtype=np.float64),
-            room_width_m=np.asarray([float(ROOM_WIDTH_M)], dtype=np.float64),
-            room_height_m=np.asarray([float(ROOM_HEIGHT_M)], dtype=np.float64),
-            alarm_frequency_hz=np.asarray([float(ALARM_FREQUENCY_HZ)], dtype=np.float64),
-            alarm_strength=np.asarray([float(ALARM_SOURCE_STRENGTH_FEM)], dtype=np.float64),
-            alarm_spread_m=np.asarray([float(ALARM_SOURCE_SPREAD_M)], dtype=np.float64),
-        )
-
-        env = os.environ.copy()
-        env.setdefault("OMP_NUM_THREADS", "1")
-        env.setdefault("OPENBLAS_NUM_THREADS", "1")
-        env.setdefault("MKL_NUM_THREADS", "1")
-        existing_pythonpath = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = (
-            f"{src_dir}:{existing_pythonpath}" if existing_pythonpath else str(src_dir)
-        )
-
-        cmd = [
-            sys.executable,
-            str(src_dir / "fem_worker.py"),
-            str(input_path),
-            str(output_path),
-        ]
-
-        proc = subprocess.run(
-            cmd,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=180,
-            check=False,
-        )
-
-        if proc.returncode != 0:
-            stderr = (proc.stderr or "").strip()
-            stdout = (proc.stdout or "").strip()
-            details = stderr if stderr else stdout
-            raise RuntimeError(f"FEM subprocess failed (exit {proc.returncode}): {details}")
-
-        if not output_path.exists():
-            raise RuntimeError("FEM subprocess did not produce output")
-
-        with np.load(output_path) as data:
-            return np.asarray(data["pressure_grid"], dtype=float)
-
-
 def FEM_solve(obstacle_mask, alarm_positions):
     if not FEM_AVAILABLE:
         raise RuntimeError(
             "FEM solver is unavailable. Install FEniCSx dependencies (dolfinx, ufl, mpi4py, petsc4py)."
         )
+
+    try:
+        from fem_fire_alarm_coverage import PointSource, solve_fire_alarm_intensity_map
+    except Exception as exc:
+        raise RuntimeError(
+            "FEM solver is unavailable. Install FEniCSx dependencies (dolfinx, ufl, mpi4py, petsc4py)."
+        ) from exc
 
     x_dim, y_dim = obstacle_mask.shape
     free_mask = ~obstacle_mask
@@ -234,11 +181,38 @@ def FEM_solve(obstacle_mask, alarm_positions):
     fem_nx = GRID_CELLS_X
     fem_ny = GRID_CELLS_Y
 
-    pressure_grid = _fem_solve_subprocess(
-        obstacle_mask=obstacle_mask,
-        alarm_positions=list(alarm_positions),
-        fem_nx=fem_nx,
-        fem_ny=fem_ny,
+    cell_size_x = ROOM_WIDTH_M / float(max(1, x_dim))
+    cell_size_y = ROOM_HEIGHT_M / float(max(1, y_dim))
+
+    walls_m = [
+        (
+            float(wx) * cell_size_x,
+            float(wy) * cell_size_y,
+            float(ww) * cell_size_x,
+            float(wh) * cell_size_y,
+        )
+        for wx, wy, ww, wh in walls
+    ]
+
+    alarms = [
+        PointSource(
+            x=(float(x) + 0.5) * cell_size_x,
+            y=(float(y) + 0.5) * cell_size_y,
+            strength=float(ALARM_SOURCE_STRENGTH_FEM),
+            spread=float(ALARM_SOURCE_SPREAD_M),
+        )
+        for x, y in list(alarm_positions)
+    ]
+
+    _, _, _, pressure_grid, _ = solve_fire_alarm_intensity_map(
+        room_width=float(ROOM_WIDTH_M),
+        room_height=float(ROOM_HEIGHT_M),
+        nx=int(fem_nx),
+        ny=int(fem_ny),
+        alarms=alarms,
+        walls=walls_m,
+        frequency_hz=float(ALARM_FREQUENCY_HZ),
+        threshold=float(COVERAGE_THRESHOLD_PA),
     )
 
     # FEM grid is (y, x). Convert to project convention (x, y).
@@ -312,6 +286,11 @@ def optimize_alarms(obstacle_mask, n_alarms, candidate_spacing=8, domain_limit=3
     solver_name = str(solver).upper()
     if solver_name not in ("FDM", "FEM"):
         raise ValueError(f"Unsupported solver '{solver}'. Choose 'FDM' or 'FEM'.")
+
+    if solver_name == "FEM" and not FEM_AVAILABLE:
+        if debug:
+            print("[DEBUG] FEM dependencies unavailable; falling back to FDM.")
+        solver_name = "FDM"
 
     if solver_name == "FEM":
         # Keep FEM optimization responsive enough for UI interaction.
