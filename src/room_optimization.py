@@ -48,9 +48,8 @@ def FDM_solve(obstacle_mask, alarm_positions):
             valid_sources.append((x, y))
 
     Cx = wave_speed * dt / dx # Courant number
-    Cx2 = Cx**2 # Stability condition for explicit scheme, must be <= 0.5
-    if Cx2 > 0.5:
-        print(f"Ustabilt valg av parametere, Cx^2 = {Cx2:.3f} > 0.5.")
+    Cx2 = Cx**2 # Stability condition for explicit scheme, must be <= 1.0
+    assert Cx2 < 1.0, f"Ustabilt valg av parametere, Cx^2 = {Cx2:.3f} > 1.0."
 
     rms_accum = np.zeros_like(u_current)
     rms_count = 0
@@ -85,14 +84,16 @@ def FDM_solve(obstacle_mask, alarm_positions):
         # Approksimasjon av Neumann grensebetingelser ved å reflektere verdier ved hindringer
         center = u_current[1:-1, 1:-1]
 
-        left_effective = np.where(left_obs, 0.0 * right, left)
-        right_effective = np.where(right_obs, 0.0 * left, right)
-        down_effective = np.where(down_obs, 0.0 * up, down)
-        up_effective = np.where(up_obs, 0.0 * down, up)
-        top_left_effective = np.where(top_left_obs, 0.0 * bottom_right, top_left)
-        top_right_effective = np.where(top_right_obs, 0.0 * bottom_left, top_right)
-        bottom_left_effective = np.where(bottom_left_obs, 0.0 * top_right, bottom_left)
-        bottom_right_effective = np.where(bottom_right_obs, 0.0 * top_left, bottom_right)
+        # Neumann boundary condition du/dn = 0.
+        # Speil verdi hvis nabocellen er en hindring
+        left_effective = np.where(left_obs, right, left)
+        right_effective = np.where(right_obs, left, right)
+        down_effective = np.where(down_obs, up, down)
+        up_effective = np.where(up_obs, down, up)
+        top_left_effective = np.where(top_left_obs, bottom_right, top_left)
+        top_right_effective = np.where(top_right_obs, bottom_left, top_right)
+        bottom_left_effective = np.where(bottom_left_obs, top_right, bottom_left)
+        bottom_right_effective = np.where(bottom_right_obs, top_left, bottom_right)
 
         # Laplacian with 9-point stencil with factor = 1/2
         u_xx = (0.5 * (left_effective + right_effective + down_effective + up_effective)
