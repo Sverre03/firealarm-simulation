@@ -67,10 +67,20 @@ def FDM_solve(obstacle_mask, alarm_positions):
         down = u_current[1:-1, :-2]
         up = u_current[1:-1, 2:]
 
+        top_left = u_current[:-2, :-2]
+        top_right = u_current[2:, :-2]
+        bottom_left = u_current[:-2, 2:]
+        bottom_right = u_current[2:, 2:]
+
         left_obs = obstacle_mask[:-2, 1:-1]
         right_obs = obstacle_mask[2:, 1:-1]
         down_obs = obstacle_mask[1:-1, :-2]
         up_obs = obstacle_mask[1:-1, 2:]
+
+        top_left_obs = obstacle_mask[:-2, :-2]
+        top_right_obs = obstacle_mask[2:, :-2]
+        bottom_left_obs = obstacle_mask[:-2, 2:]
+        bottom_right_obs = obstacle_mask[2:, 2:]
 
         # Approksimasjon av Neumann grensebetingelser ved å reflektere verdier ved hindringer
         center = u_current[1:-1, 1:-1]
@@ -79,9 +89,15 @@ def FDM_solve(obstacle_mask, alarm_positions):
         right_effective = np.where(right_obs, 0.0 * left, right)
         down_effective = np.where(down_obs, 0.0 * up, down)
         up_effective = np.where(up_obs, 0.0 * down, up)
+        top_left_effective = np.where(top_left_obs, 0.0 * bottom_right, top_left)
+        top_right_effective = np.where(top_right_obs, 0.0 * bottom_left, top_right)
+        bottom_left_effective = np.where(bottom_left_obs, 0.0 * top_right, bottom_left)
+        bottom_right_effective = np.where(bottom_right_obs, 0.0 * top_left, bottom_right)
 
-        # Laplacian
-        u_xx = left_effective + right_effective + down_effective + up_effective - 4.0 * center
+        # Laplacian with 9-point stencil with factor = 1/2
+        u_xx = (0.5 * (left_effective + right_effective + down_effective + up_effective)
+                + 0.25 * (top_left_effective + top_right_effective + bottom_left_effective + bottom_right_effective)
+                - 3.0 * center)
 
         u_next = np.zeros_like(u_current)
         # Oppdater med FDM, delvis inspirert av hplgit.github.io/fdm-book/doc/pub/book/sphinx/._book008.html
